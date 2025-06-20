@@ -18,11 +18,35 @@ erDiagram
         timestamptz created_at
     }
 
+    user_settings {
+        uuid user_id PK, FK
+        boolean chat_notification_enabled
+        boolean promotion_notification_enabled
+        timestamptz updated_at
+    }
+
     stores {
         uuid id PK
         uuid owner_id FK
         text name
+        text address
+        text description
+        text profile_image_url
         boolean is_certified
+        numeric response_rate
+        integer chat_room_count
+        integer accepted_quote_count
+        timestamptz created_at
+    }
+
+    promotions {
+        uuid id PK
+        uuid store_id FK
+        text title
+        text description
+        timestamptz start_date
+        timestamptz end_date
+        timestamptz created_at
     }
 
     quote_requests {
@@ -31,6 +55,7 @@ erDiagram
         text product_type
         jsonb request_details
         text status
+        timestamptz created_at
     }
 
     quotes {
@@ -39,6 +64,7 @@ erDiagram
         uuid store_id FK
         jsonb quote_details
         text status
+        timestamptz created_at
     }
 
     reviews {
@@ -48,6 +74,23 @@ erDiagram
         uuid quote_id FK "UNIQUE"
         smallint rating
         text comment
+        timestamptz created_at
+    }
+
+    review_votes {
+        uuid id PK
+        uuid review_id FK
+        uuid user_id FK
+        text vote_type
+        timestamptz created_at
+    }
+
+    favorites {
+        uuid id PK
+        uuid user_id FK
+        uuid target_id
+        text target_type
+        timestamptz created_at
     }
 
     chat_rooms {
@@ -55,6 +98,7 @@ erDiagram
         uuid user_id FK
         uuid store_id FK
         uuid quote_id FK
+        timestamptz created_at
     }
 
     chat_messages {
@@ -62,35 +106,90 @@ erDiagram
         uuid room_id FK
         uuid sender_id FK
         text content
+        text message_type
+        text attachment_url
+        timestamptz created_at
+    }
+
+    notices {
+        uuid id PK
+        uuid admin_id FK
+        text title
+        text content
+        boolean is_published
+        timestamptz created_at
+    }
+
+    policies {
+        integer id PK
+        text policy_type
+        text version
+        text content
+        date effective_date
+        timestamptz created_at
+    }
+
+    policy_consents {
+        uuid id PK
+        uuid user_id FK
+        integer policy_id FK
+        timestamptz consent_date
+    }
+
+    support_tickets {
+        uuid id PK
+        uuid user_id FK
+        text title
+        text content
+        text status
+        timestamptz created_at
+    }
+
+    ticket_replies {
+        uuid id PK
+        uuid ticket_id FK
+        uuid replier_id FK
+        text content
+        timestamptz created_at
     }
 
     "auth.users" ||--o| profiles : "extends"
+    profiles ||--|| user_settings : "has"
     profiles ||--o{ stores : "owns"
     profiles ||--o{ quote_requests : "creates"
     profiles ||--o{ reviews : "writes"
-    profiles ||--o{ chat_rooms : "participates_in"
+    profiles ||--o{ chat_rooms : "participates in"
     profiles ||--o{ chat_messages : "sends"
+    profiles ||--o{ favorites : "creates"
+    profiles ||--o{ support_tickets : "creates"
+    profiles ||--o{ ticket_replies : "writes"
+    profiles ||--o{ policy_consents : "agrees to"
+    profiles ||--o{ review_votes : "votes on"
     stores ||--o{ quotes : "submits"
     stores ||--o{ reviews : "receives"
-    stores ||--o{ chat_rooms : "participates_in"
+    stores ||--o{ chat_rooms : "participates in"
+    stores ||--o{ promotions : "creates"
     quote_requests ||--o{ quotes : "has"
-    quotes ||--|| reviews : "results_in"
+    quotes ||--|| reviews : "results in"
     quotes |o--o| chat_rooms : "initiates"
     chat_rooms ||--o{ chat_messages : "contains"
-
+    reviews ||--o{ review_votes : "has"
+    notices }o--|| profiles : "written by"
+    policies ||--o{ policy_consents : "has"
+    support_tickets ||--o{ ticket_replies : "has"
 ```
 
 ### 관계 설명 (Relationship Description)
 
-1.  **auth.users 1:1 profiles**: Supabase의 기본 `users` 테이블은 `profiles` 테이블로 확장됩니다. 모든 `profile`은 정확히 하나의 `user`에 속합니다.
-2.  **profiles 1:N stores**: 하나의 `profile`('owner' 역할)은 여러 개의 `store`(판매점)를 소유할 수 있습니다.
-3.  **profiles 1:N quote_requests**: 하나의 `profile`('user' 역할)은 여러 개의 `quote_request`(견적 요청)를 생성할 수 있습니다.
-4.  **quote_requests 1:N quotes**: 하나의 `quote_request`에 대해 여러 `store`가 `quote`(견적)를 제출할 수 있습니다.
-5.  **stores 1:N quotes**: 하나의 `store`는 여러 `quote`를 제출할 수 있습니다.
-6.  **quotes 1:1 reviews**: 하나의 성사된 `quote`(거래)에 대해서는 하나의 `review`만 작성될 수 있습니다. (`reviews.quote_id`는 UNIQUE 제약 조건)
-7.  **profiles 1:N reviews**: 하나의 `profile`은 여러 `review`를 작성할 수 있습니다.
-8.  **stores 1:N reviews**: 하나의 `store`는 여러 `review`를 받을 수 있습니다.
-9.  **chat_rooms 1:N chat_messages**: 하나의 `chat_room`은 여러 개의 `chat_message`를 포함합니다.
-10. **profiles, stores, quotes 와 chat_rooms 관계**:
-    * `chat_room`은 반드시 하나의 `profile`(사용자)과 하나의 `store`(판매점)를 가집니다.
-    * `chat_room`은 선택적으로 하나의 `quote`에서 시작될 수 있습니다.
+1. **auth.users 1:1 profiles**: Supabase의 기본 `users` 테이블은 `profiles` 테이블로 확장됩니다.
+2. **profiles 1:1 user_settings**: 하나의 `profile`은 하나의 `user_settings`를 가집니다.
+3. **profiles 1:N stores**: 하나의 `profile`('owner' 역할)은 여러 `store`를 소유할 수 있습니다.
+4. **stores 1:N promotions**: 하나의 `store`는 여러 `promotion`을 생성할 수 있습니다.
+5. **profiles 1:N quote_requests**: 하나의 `profile`('user' 역할)은 여러 `quote_request`를 생성할 수 있습니다.
+6. **quote_requests 1:N quotes**: 하나의 `quote_request`에 대해 여러 `store`가 `quote`를 제출할 수 있습니다.
+7. **stores 1:N quotes**: 하나의 `store`는 여러 `quote`를 제출할 수 있습니다.
+8. **quotes 1:1 reviews**: 하나의 성사된 `quote`에 대해서는 하나의 `review`만 작성될 수 있습니다.
+9. **reviews 1:N review_votes**: 하나의 `review`는 여러 사용자로부터 `review_vote`(좋아요/싫어요)를 받을 수 있습니다.
+10. **profiles 1:N favorites**: 하나의 `profile`은 여러 `favorite`(찜) 항목을 가질 수 있습니다.
+11. **chat_rooms 1:N chat_messages**: 하나의 `chat_room`은 여러 `chat_message`를 포함합니다.
+12. **notices, policies, support_tickets**: 관리자/사용자가 생성하는 독립적인 정보 테이블들과의 관계를 정의합니다.
