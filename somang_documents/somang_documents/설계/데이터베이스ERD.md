@@ -29,14 +29,30 @@ erDiagram
         uuid id PK
         uuid owner_id FK
         text name
-        text address
+        text zip_code
+        text base_address
+        text detail_address
+        numeric latitude
+        numeric longitude
         text description
         text profile_image_url
+        text status "'pending', 'approved', etc."
         boolean is_certified
         numeric response_rate
         integer chat_room_count
         integer accepted_quote_count
         timestamptz created_at
+    }
+
+    store_verification_documents {
+        uuid id PK
+        uuid store_id FK
+        text document_type
+        text file_url
+        text status
+        timestamptz created_at
+        timestamptz reviewed_at
+        uuid reviewer_id FK
     }
 
     promotions {
@@ -74,6 +90,7 @@ erDiagram
         uuid quote_id FK "UNIQUE"
         smallint rating
         text comment
+        boolean is_hidden
         timestamptz created_at
     }
 
@@ -165,10 +182,14 @@ erDiagram
     profiles ||--o{ ticket_replies : "writes"
     profiles ||--o{ policy_consents : "agrees to"
     profiles ||--o{ review_votes : "votes on"
+    profiles }o--|| store_verification_documents : "reviews"
+
     stores ||--o{ quotes : "submits"
     stores ||--o{ reviews : "receives"
     stores ||--o{ chat_rooms : "participates in"
     stores ||--o{ promotions : "creates"
+    stores ||--o{ store_verification_documents : "has"
+
     quote_requests ||--o{ quotes : "has"
     quotes ||--|| reviews : "results in"
     quotes |o--o| chat_rooms : "initiates"
@@ -181,15 +202,16 @@ erDiagram
 
 ### 관계 설명 (Relationship Description)
 
-1. **auth.users 1:1 profiles**: Supabase의 기본 `users` 테이블은 `profiles` 테이블로 확장됩니다.
-2. **profiles 1:1 user_settings**: 하나의 `profile`은 하나의 `user_settings`를 가집니다.
-3. **profiles 1:N stores**: 하나의 `profile`('owner' 역할)은 여러 `store`를 소유할 수 있습니다.
-4. **stores 1:N promotions**: 하나의 `store`는 여러 `promotion`을 생성할 수 있습니다.
-5. **profiles 1:N quote_requests**: 하나의 `profile`('user' 역할)은 여러 `quote_request`를 생성할 수 있습니다.
-6. **quote_requests 1:N quotes**: 하나의 `quote_request`에 대해 여러 `store`가 `quote`를 제출할 수 있습니다.
-7. **stores 1:N quotes**: 하나의 `store`는 여러 `quote`를 제출할 수 있습니다.
-8. **quotes 1:1 reviews**: 하나의 성사된 `quote`에 대해서는 하나의 `review`만 작성될 수 있습니다.
-9. **reviews 1:N review_votes**: 하나의 `review`는 여러 사용자로부터 `review_vote`(좋아요/싫어요)를 받을 수 있습니다.
-10. **profiles 1:N favorites**: 하나의 `profile`은 여러 `favorite`(찜) 항목을 가질 수 있습니다.
-11. **chat_rooms 1:N chat_messages**: 하나의 `chat_room`은 여러 `chat_message`를 포함합니다.
-12. **notices, policies, support_tickets**: 관리자/사용자가 생성하는 독립적인 정보 테이블들과의 관계를 정의합니다.
+1.  **auth.users 1:1 profiles**: Supabase의 기본 `users` 테이블은 `profiles` 테이블로 확장됩니다.
+2.  **profiles 1:1 user_settings**: 하나의 `profile`은 하나의 `user_settings`를 가집니다.
+3.  **profiles 1:N stores**: 하나의 `profile`('owner' 역할)은 여러 `store`를 소유할 수 있습니다.
+4.  **stores 1:N store_verification_documents**: 하나의 `store`는 여러 `store_verification_document`를 가질 수 있습니다 (예: 사업자등록증, 통신판매업신고증).
+5.  **stores 1:N promotions**: 하나의 `store`는 여러 `promotion`을 생성할 수 있습니다.
+6.  **profiles 1:N quote_requests**: 하나의 `profile`('user' 역할)은 여러 `quote_request`를 생성할 수 있습니다.
+7.  **quote_requests 1:N quotes**: 하나의 `quote_request`에 대해 여러 `store`가 `quote`를 제출할 수 있습니다.
+8.  **stores 1:N quotes**: 하나의 `store`는 여러 `quote`를 제출할 수 있습니다.
+9.  **quotes 1:1 reviews**: 하나의 성사된 `quote`에 대해서는 하나의 `review`만 작성될 수 있습니다.
+10. **reviews 1:N review_votes**: 하나의 `review`는 여러 사용자로부터 `review_vote`(좋아요/싫어요)를 받을 수 있습니다.
+11. **profiles 1:N favorites**: 하나의 `profile`은 여러 `favorite`(찜) 항목을 가질 수 있습니다.
+12. **chat_rooms 1:N chat_messages**: 하나의 `chat_room`은 여러 `chat_message`를 포함합니다.
+13. **notices, policies, support_tickets**: 관리자/사용자가 생성하는 독립적인 정보 테이블들과의 관계를 정의합니다.
