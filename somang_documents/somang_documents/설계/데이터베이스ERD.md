@@ -16,6 +16,7 @@ erDiagram
         text role
         text name
         timestamptz created_at
+        timestamptz deleted_at
     }
 
     user_settings {
@@ -32,8 +33,7 @@ erDiagram
         text zip_code
         text base_address
         text detail_address
-        numeric latitude
-        numeric longitude
+        geography location "Point, 4326"
         text description
         text profile_image_url
         text status "'pending', 'approved', etc."
@@ -42,6 +42,7 @@ erDiagram
         integer chat_room_count
         integer accepted_quote_count
         timestamptz created_at
+        timestamptz deleted_at
     }
 
     store_verification_documents {
@@ -72,6 +73,7 @@ erDiagram
         jsonb request_details
         text status
         timestamptz created_at
+        timestamptz deleted_at
     }
 
     quotes {
@@ -81,6 +83,7 @@ erDiagram
         jsonb quote_details
         text status
         timestamptz created_at
+        timestamptz deleted_at
     }
 
     reviews {
@@ -92,6 +95,7 @@ erDiagram
         text comment
         boolean is_hidden
         timestamptz created_at
+        timestamptz deleted_at
     }
 
     review_votes {
@@ -169,6 +173,16 @@ erDiagram
         text content
         timestamptz created_at
     }
+    
+    audit_logs {
+        uuid id PK
+        uuid actor_id FK
+        text action_type
+        uuid target_id
+        jsonb old_value
+        jsonb new_value
+        timestamptz created_at
+    }
 
     "auth.users" ||--o| profiles : "extends"
     profiles ||--|| user_settings : "has"
@@ -183,6 +197,7 @@ erDiagram
     profiles ||--o{ policy_consents : "agrees to"
     profiles ||--o{ review_votes : "votes on"
     profiles }o--|| store_verification_documents : "reviews"
+    profiles ||--o{ audit_logs: "performs action"
 
     stores ||--o{ quotes : "submits"
     stores ||--o{ reviews : "receives"
@@ -215,3 +230,4 @@ erDiagram
 11. **profiles 1:N favorites**: 하나의 `profile`은 여러 `favorite`(찜) 항목을 가질 수 있습니다.
 12. **chat_rooms 1:N chat_messages**: 하나의 `chat_room`은 여러 `chat_message`를 포함합니다.
 13. **notices, policies, support_tickets**: 관리자/사용자가 생성하는 독립적인 정보 테이블들과의 관계를 정의합니다.
+14. **audit_logs**: 관리자 및 시스템의 주요 활동을 기록하며, `profiles` 테이블을 참조하여 행위자를 식별합니다.
