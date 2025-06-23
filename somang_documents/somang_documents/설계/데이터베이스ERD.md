@@ -184,6 +184,50 @@ erDiagram
         timestamptz created_at
     }
 
+    devices {
+        uuid id PK
+        text manufacturer
+        text device_name
+        text device_code UK
+        date release_date
+        text[] colors
+        integer[] storage_options
+        text description
+        integer ram_gb
+        integer battery_mah
+        numeric screen_size_inch
+        text display_spec
+        text cpu_spec
+        text camera_spec
+        text external_memory_support
+        text mobile_payment
+        text water_dust_resistance
+        text fingerprint_sensor
+        boolean wireless_charging_supported
+        boolean factory_film_attached
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    internet_products {
+        uuid id PK
+        text product_name
+        text carrier
+        text product_type
+        integer internet_speed_mbps
+        integer tv_channel_count
+        integer regular_price
+        integer discounted_price
+        integer contract_period_months
+        integer installation_fee_weekday
+        integer installation_fee_weekend
+        text description
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
     "auth.users" ||--o| profiles : "extends"
     profiles ||--|| user_settings : "has"
     profiles ||--o{ stores : "owns"
