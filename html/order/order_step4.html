@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기 (3/5)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .selection-label {
+            transition: all 0.2s ease-in-out;
+        }
+        .selection-label.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .check-icon-container {
+            width: 1.5rem; height: 1.5rem; border-radius: 9999px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; border-width: 2px; transition: all 0.2s ease-in-out;
+        }
+        .selection-label:not(.selected) .check-icon-container {
+            border-color: #d1d5db; background-color: white;
+        }
+        .selection-label.selected .check-icon-container {
+            background-color: #3b82f6; border-color: #3b82f6;
+        }
+        .check-icon-container .fa-check {
+             opacity: 0; transition: opacity 0.2s ease-in-out;
+        }
+        .selection-label.selected .check-icon-container .fa-check {
+            opacity: 1;
+        }
+        input[type="radio"] { display: none; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-sm h-[844px] bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <div class="w-full bg-gray-200 h-1">
+            <div class="bg-blue-600 h-1 transition-all duration-500" style="width: 37.5%"></div>
+        </div>
+
+        <main class="flex-grow overflow-y-auto p-6">
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800">현재 이용중인 통신사를<br>변경할 의향이 있으신가요?</h2>
+                <div class="mt-8 space-y-4" id="changeTypeGroup">
+                    <label class="selection-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="check-icon-container mr-4"><i class="fas fa-check text-sm text-white"></i></div>
+                        <span>네 (번호이동)</span>
+                        <input type="radio" name="changeType" value="port">
+                    </label>
+                    <label class="selection-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="check-icon-container mr-4"><i class="fas fa-check text-sm text-white"></i></div>
+                        <span>아니오 (기기변경)</span>
+                        <input type="radio" name="changeType" value="device_only">
+                    </label>
+                    <label class="selection-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="check-icon-container mr-4"><i class="fas fa-check text-sm text-white"></i></div>
+                        <span>신규가입</span>
+                        <input type="radio" name="changeType" value="new">
+                    </label>
+                </div>
+            </section>
+
+            <section id="newCarrierSection" class="mt-10 hidden transition-all duration-300">
+                <h3 class="text-xl font-bold text-gray-800">변경을 원하는 통신사를 선택해 주세요!</h3>
+                <div class="mt-6 grid grid-cols-3 gap-3" id="newCarrierGroup">
+                    <label class="selection-label flex items-center justify-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="check-icon-container mr-2"><i class="fas fa-check text-xs text-white"></i></div>
+                        <span class="font-medium text-sm">SKT</span>
+                        <input type="radio" name="newCarrier" value="skt">
+                    </label>
+                    <label class="selection-label flex items-center justify-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="check-icon-container mr-2"><i class="fas fa-check text-xs text-white"></i></div>
+                        <span class="font-medium text-sm">KT</span>
+                        <input type="radio" name="newCarrier" value="kt">
+                    </label>
+                    <label class="selection-label flex items-center justify-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer">
+                         <div class="check-icon-container mr-2"><i class="fas fa-check text-xs text-white"></i></div>
+                        <span class="font-medium text-sm">LGU+</span>
+                        <input type="radio" name="newCarrier" value="lgu">
+                    </label>
+                    <label class="selection-label flex items-center justify-center p-3 border-2 border-gray-300 rounded-lg cursor-pointer">
+                         <div class="check-icon-container mr-2"><i class="fas fa-check text-xs text-white"></i></div>
+                        <span class="font-medium text-sm">알뜰폰</span>
+                        <input type="radio" name="newCarrier" value="mvno">
+                    </label>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+            <button class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition"  aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-lg text-gray-600"></i>
+            </button>
+            <button id="nextButton" class="flex-grow ml-4 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:bg-gray-300" disabled>
+                다음
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        const changeTypeGroup = document.getElementById('changeTypeGroup');
+        const newCarrierSection = document.getElementById('newCarrierSection');
+        const newCarrierGroup = document.getElementById('newCarrierGroup');
+        const nextButton = document.getElementById('nextButton');
+        let currentCarrier = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            currentCarrier = params.get('carrier');
+        });
+
+        function updateNextButtonState() {
+            const changeTypeSelected = document.querySelector('input[name="changeType"]:checked');
+            if (!changeTypeSelected) {
+                nextButton.disabled = true;
+                return;
+            }
+            if (changeTypeSelected.value === 'device_only') {
+                nextButton.disabled = false;
+            } else {
+                const newCarrierSelected = document.querySelector('input[name="newCarrier"]:checked');
+                nextButton.disabled = !newCarrierSelected;
+            }
+        }
+
+        function handleCarrierSelectionVisibility() {
+            const changeTypeSelected = document.querySelector('input[name="changeType"]:checked');
+            if (!changeTypeSelected) return;
+
+            const newCarrierLabels = newCarrierGroup.querySelectorAll('label');
+            if (changeTypeSelected.value === 'port') {
+                newCarrierSection.classList.remove('hidden');
+                newCarrierLabels.forEach(label => {
+                    const radio = label.querySelector('input[type="radio"]');
+                    if (radio.value === currentCarrier) {
+                        label.classList.add('hidden');
+                    } else {
+                        label.classList.remove('hidden');
+                    }
+                });
+            } else if (changeTypeSelected.value === 'new') {
+                newCarrierSection.classList.remove('hidden');
+                newCarrierLabels.forEach(label => {
+                    label.classList.remove('hidden');
+                });
+            } else {
+                newCarrierSection.classList.add('hidden');
+            }
+            
+            newCarrierGroup.querySelectorAll('input[type="radio"]').forEach(rb => rb.checked = false);
+            newCarrierGroup.querySelectorAll('label').forEach(lbl => lbl.classList.remove('selected'));
+            updateNextButtonState();
+        }
+
+        const changeTypeLabels = changeTypeGroup.querySelectorAll('label');
+        changeTypeLabels.forEach(label => {
+            label.addEventListener('click', () => {
+                changeTypeLabels.forEach(lbl => lbl.classList.remove('selected'));
+                label.classList.add('selected');
+                const radio = label.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+                
+                handleCarrierSelectionVisibility();
+                updateNextButtonState();
+            });
+        });
+
+        const newCarrierLabels = newCarrierGroup.querySelectorAll('label');
+        newCarrierLabels.forEach(label => {
+            label.addEventListener('click', () => {
+                newCarrierLabels.forEach(lbl => lbl.classList.remove('selected'));
+                label.classList.add('selected');
+                const radio = label.querySelector('input[type="radio"]');
+                if(radio) radio.checked = true;
+                updateNextButtonState();
+            });
+        });
+
+        nextButton.addEventListener('click', function() {
+            if (this.disabled) return;
+
+            const params = new URLSearchParams(window.location.search);
+            const changeType = document.querySelector('input[name="changeType"]:checked').value;
+            params.set('changeType', changeType);
+
+            if (changeType === 'port' || changeType === 'new') {
+                const newCarrier = document.querySelector('input[name="newCarrier"]:checked').value;
+                params.set('newCarrier', newCarrier);
+            } else {
+                params.delete('newCarrier');
+            }
+
+            window.location.href = `order_step5.html?${params.toString()}`;
+        });
+
+    </script>
+</body>
+</html>

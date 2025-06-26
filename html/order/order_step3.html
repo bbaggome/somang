@@ -4,20 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T-Bridge - 견적 받아보기 (2/5)</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Noto Sans KR -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background-color: #f0f2f5;
         }
-        /* Custom radio button styles */
         .custom-radio-label {
             transition: all 0.2s ease-in-out;
         }
@@ -27,7 +23,6 @@
             font-weight: 700;
             color: #2563eb;
         }
-        /* Hide actual radio input */
         input[type="radio"] {
             display: none;
         }
@@ -35,10 +30,8 @@
 </head>
 <body class="flex items-center justify-center min-h-screen">
 
-    <!-- Mobile Screen Mockup -->
     <div class="w-full max-w-sm h-[844px] bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
 
-        <!-- Header -->
         <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
             <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
                 <i class="fas fa-chevron-left text-xl text-gray-700"></i>
@@ -46,19 +39,14 @@
             <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        <!-- Progress Bar -->
         <div class="w-full bg-gray-200 h-1">
-            <div class="bg-blue-600 h-1" style="width: 40%"></div>
+            <div class="bg-blue-600 h-1" style="width: 25%"></div>
         </div>
 
-        <!-- Main Content (Scrollable Area) -->
         <main class="flex-grow overflow-y-auto p-6">
-            
-            <!-- Question: 현재 통신사 -->
             <section>
                 <h2 class="text-2xl font-bold text-gray-800">현재 사용중인<br>통신사를 선택하세요.</h2>
                 <div class="mt-8 space-y-4" id="carrierGroup">
-                    <!-- Option 1: SKT -->
                     <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
                         <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
                             <i class="fas fa-check text-sm text-white"></i>
@@ -66,7 +54,6 @@
                         <span class="font-medium">SKT</span>
                         <input type="radio" name="carrier" value="skt">
                     </label>
-                    <!-- Option 2: KT -->
                     <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
                         <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
                              <i class="fas fa-check text-sm text-white"></i>
@@ -74,7 +61,6 @@
                         <span class="font-medium">KT</span>
                         <input type="radio" name="carrier" value="kt">
                     </label>
-                    <!-- Option 3: LGU+ -->
                     <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
                         <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
                              <i class="fas fa-check text-sm text-white"></i>
@@ -82,7 +68,6 @@
                         <span class="font-medium">LGU+</span>
                         <input type="radio" name="carrier" value="lgu">
                     </label>
-                    <!-- Option 4: 알뜰폰 -->
                     <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
                         <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
                              <i class="fas fa-check text-sm text-white"></i>
@@ -94,7 +79,6 @@
             </section>
         </main>
         
-        <!-- Bottom Fixed Button -->
         <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
             <button class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition" aria-label="뒤로가기" onclick="history.back()">
                 <i class="fas fa-chevron-left text-lg text-gray-600"></i>
@@ -106,17 +90,13 @@
     </div>
 
     <script>
-        // Function to handle custom radio button groups
         function setupRadioGroup(groupId) {
             const group = document.getElementById(groupId);
             if (!group) return;
-
             const labels = group.querySelectorAll('label');
             const nextButton = document.querySelector('footer button.flex-grow');
-
             labels.forEach(label => {
                 label.addEventListener('click', () => {
-                    // Reset all labels in the group
                     labels.forEach(lbl => {
                         lbl.classList.remove('selected');
                         const checkDiv = lbl.querySelector('div');
@@ -125,31 +105,37 @@
                             checkDiv.classList.add('bg-white', 'border-gray-300');
                         }
                     });
-
-                    // Activate the clicked label
                     label.classList.add('selected');
                     const checkDiv = label.querySelector('div');
                      if (checkDiv) {
                         checkDiv.classList.remove('bg-white', 'border-gray-300');
                         checkDiv.classList.add('bg-blue-600', 'border-blue-600');
                     }
-
-                    // Check the actual radio button
                     const radio = label.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                    }
-
-                    // Enable the "Next" button
-                    if(nextButton) {
-                        nextButton.disabled = false;
-                    }
+                    if (radio) radio.checked = true;
+                    if(nextButton) nextButton.disabled = false;
                 });
             });
         }
-        
-        // Setup for the carrier radio group
         setupRadioGroup('carrierGroup');
+
+        // '다음' 버튼 클릭 이벤트 리스너 추가
+        const nextButton = document.querySelector('footer button.flex-grow');
+        nextButton.addEventListener('click', function() {
+            if (this.disabled) return;
+
+            // 현재 단계에서 선택한 통신사 값
+            const selectedCarrier = document.querySelector('input[name="carrier"]:checked').value;
+            
+            // 이전 페이지에서 전달받은 파라미터를 가져옴
+            const currentParams = new URLSearchParams(window.location.search);
+            
+            // 새로 선택한 통신사 값을 파라미터에 추가
+            currentParams.set('carrier', selectedCarrier);
+            
+            // 파라미터를 포함하여 다음 페이지로 이동
+            window.location.href = `order_step4.html?${currentParams.toString()}`;
+        });
     </script>
 </body>
 </html>
