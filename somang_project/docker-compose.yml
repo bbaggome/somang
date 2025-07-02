@@ -1,0 +1,77 @@
+services:
+  # --- Development Services (dev profile) ---
+  user-app-dev:
+    container_name: user-app-dev
+    build:
+      context: ./user-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./user-app:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "pnpm install && pnpm run dev"
+    profiles:
+      - "dev"
+
+  biz-app-dev:
+    container_name: biz-app-dev
+    build:
+      context: ./biz-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./biz-app:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "pnpm install && pnpm run dev"
+    profiles:
+      - "dev"
+
+  admin-app-dev:
+    container_name: admin-app-dev
+    build:
+      context: ./admin-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./admin-app:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "pnpm install && pnpm run dev"
+    profiles:
+      - "dev"
+
+  # --- Production Services (prod profile) ---
+  user-app-prod:
+    container_name: user-app-prod
+    build:
+      context: ./user-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:3000"
+    profiles:
+      - "prod"
+
+  biz-app-prod:
+    container_name: biz-app-prod
+    build:
+      context: ./biz-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8001:3000"
+    profiles:
+      - "prod"
+
+  admin-app-prod:
+    container_name: admin-app-prod
+    build:
+      context: ./admin-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8002:3000"
+    profiles:
+      - "prod"
