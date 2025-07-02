@@ -1,0 +1,29 @@
+services:
+  # 개발 환경 서비스
+  dev:
+    build:
+      context: .
+      target: development # Dockerfile의 development 스테이지를 타겟으로 지정
+    container_name: user-app-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app # 로컬 소스코드와 컨테이너 내부를 동기화
+      - /app/node_modules # 컨테이너 내부의 node_modules를 유지
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true # Docker 환경에서 Hot Reloading을 위한 설정
+    command: npm run dev
+
+  # 프로덕션 환경 서비스
+  prod:
+    build:
+      context: .
+      target: production # Dockerfile의 production 스테이지를 타겟으로 지정
+    container_name: user-app-prod
+    ports:
+      - "8080:3000" # 로컬 8080 포트를 컨테이너 3000 포트와 연결
+    environment:
+      - NODE_ENV=production
+    command: npm start
