@@ -6,9 +6,9 @@
     xmlns:local="clr-namespace:MockUpUser"
     Title="MockUpUser">
 
-    <ShellContent
-        Title="Home"
+    <ShellContent        
         ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Route="MainPage"
+        Shell.NavBarIsVisible="False" />
 
 </Shell>

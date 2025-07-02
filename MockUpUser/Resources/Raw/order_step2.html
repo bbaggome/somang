@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기 (1/5)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* Custom radio button styles */
+        .custom-radio-label {
+            transition: all 0.2s ease-in-out;
+        }
+
+            .custom-radio-label.selected {
+                border-color: #3b82f6;
+                background-color: #eff6ff;
+                font-weight: 700;
+                color: #2563eb;
+            }
+        /* Hide actual radio input */
+        input[type="radio"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col overflow-hidden mx-auto">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <div class="w-full bg-gray-200 h-1 flex-shrink-0">
+            <div class="bg-blue-600 h-1" style="width: 12.5%"></div>
+        </div>
+
+        <main class="flex-grow overflow-y-auto p-6 pb-24">
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800">누구의 폰을<br>구매 하시는건가요?</h2>
+                <div class="mt-6 space-y-4" id="purchaseTargetGroup">
+                    <label class="custom-radio-label selected flex items-center justify-between p-4 border-2 border-blue-600 rounded-lg cursor-pointer">
+                        <span>본인</span>
+                        <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                            <i class="fas fa-check text-sm"></i>
+                        </div>
+                        <input type="radio" name="purchaseTarget" value="self" checked>
+                    </label>
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>부모님/자녀 등</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="purchaseTarget" value="other">
+                    </label>
+                </div>
+            </section>
+
+            <section class="mt-10">
+                <h3 class="text-xl font-bold text-gray-800">사용자 연령대를 선택해 주세요</h3>
+                <p class="text-sm text-gray-500 mt-1">연령에 맞는 요금제 추천에 활용됩니다</p>
+                <div class="mt-6 space-y-4" id="ageGroup">
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>일반 (만 35세~64세 이하)</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="age" value="general">
+                    </label>
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>청년 (만 19세~34세 이하)</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="age" value="youth">
+                    </label>
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>청소년 (만 12세~18세 이하)</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="age" value="teen">
+                    </label>
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>키즈 (만 12세 이하)</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="age" value="kids">
+                    </label>
+                    <label class="custom-radio-label flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <span>어르신 (만 65세 이상)</span>
+                        <div class="w-6 h-6 rounded-full bg-white border-2 border-gray-300 hidden flex items-center justify-center">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <input type="radio" name="age" value="senior">
+                    </label>
+                </div>
+            </section>
+        </main>
+
+        <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0">
+            <button class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:bg-gray-300" disabled>
+                다음
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        // Function to handle custom radio button groups
+        function setupRadioGroup(groupId) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            const labels = group.querySelectorAll('label');
+            const nextButton = document.querySelector('footer button');
+
+            labels.forEach(label => {
+                label.addEventListener('click', () => {
+                    // Reset all labels in the group
+                    labels.forEach(lbl => {
+                        lbl.classList.remove('selected', 'border-blue-600');
+                        lbl.classList.add('border-gray-300');
+                        const checkDiv = lbl.querySelector('div');
+                        if (checkDiv) {
+                            checkDiv.classList.add('hidden');
+                            checkDiv.classList.remove('bg-blue-600', 'text-white');
+                            checkDiv.classList.add('bg-white', 'border-2', 'border-gray-300');
+                        }
+                    });
+
+                    // Activate the clicked label
+                    label.classList.add('selected', 'border-blue-600');
+                    label.classList.remove('border-gray-300');
+                    const checkDiv = label.querySelector('div');
+                    if (checkDiv) {
+                        checkDiv.classList.remove('hidden', 'bg-white', 'border-2', 'border-gray-300');
+                        checkDiv.classList.add('bg-blue-600', 'text-white');
+                    }
+
+                    // Check the actual radio button
+                    const radio = label.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+
+                    // Enable the "Next" button only when both questions are answered
+                    const purchaseTargetSelected = document.querySelector('input[name="purchaseTarget"]:checked');
+                    const ageGroupSelected = document.querySelector('input[name="age"]:checked');
+                    if (purchaseTargetSelected && ageGroupSelected) {
+                        nextButton.disabled = false;
+                    }
+                });
+            });
+        }
+
+        // Setup for both radio groups
+        setupRadioGroup('purchaseTargetGroup');
+        setupRadioGroup('ageGroup');
+
+        // Initially set the first option of the first group as selected
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstLabel = document.querySelector('#purchaseTargetGroup label');
+            if (firstLabel) {
+                // We don't need to simulate a click if it's already selected by default in HTML
+                // But we do need to ensure the script logic runs for button state
+                const radio = firstLabel.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+            }
+        });
+
+        // Add event listener to the '다음' button for navigation
+        const nextButton = document.querySelector('footer button');
+        nextButton.addEventListener('click', () => {
+            if (!nextButton.disabled) {
+                // 선택된 값들을 가져옵니다.
+                const purchaseTarget = document.querySelector('input[name="purchaseTarget"]:checked').value;
+                const age = document.querySelector('input[name="age"]:checked').value;
+
+                // 쿼리 파라미터를 포함한 URL을 생성합니다.
+                const url = `order_step3.html?purchaseTarget=${purchaseTarget}&age=${age}`;
+
+                // 생성된 URL로 페이지를 이동시킵니다.
+                window.location.href = url;
+            }
+        });
+    </script>
+</body>
+</html>

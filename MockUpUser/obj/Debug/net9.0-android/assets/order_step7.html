@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기 (지역선택)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden mx-auto">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <div class="w-full bg-gray-200 h-1 flex-shrink-0">
+            <div class="bg-blue-600 h-1 transition-all duration-500" style="width: 100%"></div>
+        </div>
+
+        <main class="flex-grow overflow-y-auto p-6 pb-24">
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800">견적을 받아볼 동네를<br>선택해주세요!</h2>
+                <p class="mt-2 text-gray-500">(최대 2곳 선택가능)</p>
+
+                <div id="locationList" class="mt-8 space-y-4">
+                </div>
+
+                <div id="addLocationButtonContainer" class="mt-4">
+                    <button id="addLocation" class="w-full flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg text-gray-400 hover:bg-gray-50 transition">
+                        <span>동네를 선택해 주세요</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+            <button class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-lg text-gray-600"></i>
+            </button>
+            <button id="nextButton" class="flex-grow ml-4 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:bg-gray-400">
+                다음
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        const locationList = document.getElementById('locationList');
+        const addLocationButton = document.getElementById('addLocation');
+        const addLocationContainer = document.getElementById('addLocationButtonContainer');
+        const nextButton = document.getElementById('nextButton');
+
+        let selectedLocations = ['영천동'];
+        // Demo data for location selection
+        const availableLocations = ['반송동', '석우동', '청계동', '오산동'];
+
+        function renderLocations() {
+            locationList.innerHTML = '';
+            selectedLocations.forEach(locationName => {
+                const locationElement = document.createElement('div');
+                locationElement.className = 'w-full flex items-center justify-between p-4 border-2 border-blue-500 rounded-lg text-blue-600 font-bold bg-blue-50';
+                locationElement.innerHTML = `
+                        <span>${locationName}</span>
+                        <button data-location="${locationName}" class="remove-btn text-gray-400 hover:text-red-500">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    `;
+                locationList.appendChild(locationElement);
+            });
+
+            // Add event listeners to new remove buttons
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent the parent div's click event
+                    removeLocation(button.dataset.location);
+                });
+            });
+
+            // Update button visibility and state
+            if (selectedLocations.length >= 2) {
+                addLocationContainer.classList.add('hidden');
+            } else {
+                addLocationContainer.classList.remove('hidden');
+            }
+            nextButton.disabled = selectedLocations.length === 0;
+        }
+
+        function addLocation() {
+            if (selectedLocations.length < 2) {
+                // Find a location that is not already selected
+                const newLocation = availableLocations.find(loc => !selectedLocations.includes(loc));
+                if (newLocation) {
+                    selectedLocations.push(newLocation);
+                    renderLocations();
+                }
+            }
+        }
+
+        function removeLocation(locationNameToRemove) {
+            selectedLocations = selectedLocations.filter(loc => loc !== locationNameToRemove);
+            renderLocations();
+        }
+
+        addLocationButton.addEventListener('click', addLocation);
+
+        // **[NEW]** Event listener for the next button
+        nextButton.addEventListener('click', () => {
+            if (!nextButton.disabled) {
+                // You can add logic here to save the selected locations before navigating
+                console.log('Selected locations:', selectedLocations);
+                window.location.href = 'order_step8.html'; // Navigate to the next page
+            }
+        });
+
+        // Initial render
+        renderLocations();
+
+    </script>
+</body>
+</html>

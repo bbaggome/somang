@@ -1,24 +1,54 @@
-﻿namespace MockUpUser
+﻿
+
+namespace MockUpUser
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
+            LoadHtml("login.html");
+
+            HtmlWebView.Navigating += (s, e) =>
+            {
+                if (e.Url.EndsWith(".html"))
+                {
+                    e.Cancel = true;
+                    var localFile = e.Url.Substring(e.Url.LastIndexOf('/') + 1);
+                    LoadHtml(localFile);
+                }
+            };
         }
 
-        private void OnCounterClicked(object? sender, EventArgs e)
+        protected override bool OnBackButtonPressed()
         {
-            count++;
+            if (HtmlWebView.CanGoBack)
+            {
+                HtmlWebView.GoBack();
+                return true; // 우리가 처리함
+            }
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+            return base.OnBackButtonPressed();
+        }
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+        private void LoadHtml(string fileName)
+        {
+            var path = $"MockUpUser.Resources.Raw.{fileName.Replace("/", ".")}";
+            var assembly = typeof(MainPage).Assembly;
+
+            foreach (var res in assembly.GetManifestResourceNames())
+            {
+                System.Diagnostics.Debug.WriteLine($"[RESOURCE] {res}");
+            }
+
+            using var stream = assembly.GetManifestResourceStream(path);
+            using var reader = new StreamReader(stream);
+            var html = reader.ReadToEnd();
+
+            HtmlWebView.Source = new HtmlWebViewSource
+            {
+                Html = html,
+            };
         }
     }
 }

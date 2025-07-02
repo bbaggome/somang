@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기 (2/5)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        .custom-radio-label {
+            transition: all 0.2s ease-in-out;
+        }
+
+            .custom-radio-label.selected {
+                border-color: #3b82f6;
+                background-color: #eff6ff;
+                font-weight: 700;
+                color: #2563eb;
+            }
+
+        input[type="radio"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col overflow-hidden mx-auto">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <div class="w-full bg-gray-200 h-1 flex-shrink-0">
+            <div class="bg-blue-600 h-1" style="width: 25%"></div>
+        </div>
+
+        <main class="flex-grow overflow-y-auto p-6 pb-24">
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800">현재 사용중인<br>통신사를 선택하세요.</h2>
+                <div class="mt-8 space-y-4" id="carrierGroup">
+                    <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <span class="font-medium">SKT</span>
+                        <input type="radio" name="carrier" value="skt">
+                    </label>
+                    <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <span class="font-medium">KT</span>
+                        <input type="radio" name="carrier" value="kt">
+                    </label>
+                    <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <span class="font-medium">LGU+</span>
+                        <input type="radio" name="carrier" value="lgu">
+                    </label>
+                    <label class="custom-radio-label flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 flex-shrink-0">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <span class="font-medium">알뜰폰</span>
+                        <input type="radio" name="carrier" value="mvno">
+                    </label>
+                </div>
+            </section>
+        </main>
+
+        <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+            <button class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-lg text-gray-600"></i>
+            </button>
+            <button class="flex-grow ml-4 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:bg-gray-300" disabled>
+                다음
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        function setupRadioGroup(groupId) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            const labels = group.querySelectorAll('label');
+            const nextButton = document.querySelector('footer button.flex-grow');
+            labels.forEach(label => {
+                label.addEventListener('click', () => {
+                    labels.forEach(lbl => {
+                        lbl.classList.remove('selected');
+                        const checkDiv = lbl.querySelector('div');
+                        if (checkDiv) {
+                            checkDiv.classList.remove('bg-blue-600', 'border-blue-600');
+                            checkDiv.classList.add('bg-white', 'border-gray-300');
+                        }
+                    });
+                    label.classList.add('selected');
+                    const checkDiv = label.querySelector('div');
+                    if (checkDiv) {
+                        checkDiv.classList.remove('bg-white', 'border-gray-300');
+                        checkDiv.classList.add('bg-blue-600', 'border-blue-600');
+                    }
+                    const radio = label.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                    if (nextButton) nextButton.disabled = false;
+                });
+            });
+        }
+        setupRadioGroup('carrierGroup');
+
+        // '다음' 버튼 클릭 이벤트 리스너 추가
+        const nextButton = document.querySelector('footer button.flex-grow');
+        nextButton.addEventListener('click', function () {
+            if (this.disabled) return;
+
+            // 현재 단계에서 선택한 통신사 값
+            const selectedCarrier = document.querySelector('input[name="carrier"]:checked').value;
+
+            // 이전 페이지에서 전달받은 파라미터를 가져옴
+            const currentParams = new URLSearchParams(window.location.search);
+
+            // 새로 선택한 통신사 값을 파라미터에 추가
+            currentParams.set('carrier', selectedCarrier);
+
+            // 파라미터를 포함하여 다음 페이지로 이동
+            window.location.href = `order_step4.html?${currentParams.toString()}`;
+        });
+    </script>
+</body>
+</html>

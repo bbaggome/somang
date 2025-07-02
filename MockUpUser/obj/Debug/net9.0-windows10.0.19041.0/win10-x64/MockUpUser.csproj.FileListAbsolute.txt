@@ -467,3 +467,13 @@ C:\Works\somang\somang\MockUpUser\obj\Debug\net9.0-windows10.0.19041.0\win10-x64
 C:\Works\somang\somang\MockUpUser\obj\Debug\net9.0-windows10.0.19041.0\win10-x64\qualifiers.txt
 C:\Works\somang\somang\MockUpUser\obj\Debug\net9.0-windows10.0.19041.0\win10-x64\qualifiers.txt.intermediate
 C:\Works\somang\somang\MockUpUser\obj\Debug\net9.0-windows10.0.19041.0\win10-x64\MultipleQualifiersPerDimensionFound.txt
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\login.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\main.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step1.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step2.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step3.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step4.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step5.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step6.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step7.html
+C:\Works\somang\somang\MockUpUser\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\order_step8.html

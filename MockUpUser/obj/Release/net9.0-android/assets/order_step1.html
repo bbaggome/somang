@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* 타임라인 라인 스타일 */
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 2.5rem;
+            width: 2px;
+            height: calc(100% - 1rem);
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        /* 모달 애니메이션을 위한 스타일 */
+        #bottomSheet.hidden {
+            display: none;
+        }
+
+        #bottomSheet .transform {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col overflow-hidden mx-auto">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <main class="flex-grow overflow-y-auto px-6 pt-8 pb-28">
+
+            <section class="text-center">
+                <p class="text-blue-600 font-bold">휴대폰 신규/기변/번호이동</p>
+                <h2 class="text-3xl font-black text-gray-800 mt-1">휴대폰 견적 받아보기<br>START!</h2>
+
+                <div class="mt-8 relative h-48">
+                    <svg class="w-full h-full" viewBox="0 0 300 200">
+                        <g transform="translate(100, 50)">
+                            <path d="M50 0C69.33 0 85 15.67 85 35V45H15V35C15 15.67 30.67 0 50 0Z" fill="#f0e4d4" />
+                            <path d="M30 45H70V110H30V45Z" fill="#4a5568" />
+                            <circle cx="50" cy="80" r="10" fill="#a0aec0" />
+                            <path d="M0 40C0 26.67 11.19 15 25 15H75C88.81 15 100 26.67 100 40V45H0V40Z" fill="#2d3748" />
+                            <rect x="75" y="60" width="30" height="50" rx="5" fill="#718096" />
+                            <rect x="78" y="63" width="24" height="44" fill="#edf2f7" />
+                            <circle cx="130" cy="20" r="10" fill="#fbd38d" opacity="0.8" />
+                            <text x="123" y="24" font-size="8" fill="#c05621">240</text>
+                            <circle cx="145" cy="40" r="15" fill="#a3bffa" opacity="0.8" />
+                            <text x="135" y="44" font-size="10" fill="#2c5282">360</text>
+                            <circle cx="150" cy="65" r="12" fill="#9ae6b4" opacity="0.8" />
+                            <text x="142" y="69" font-size="9" fill="#276749">480</text>
+                        </g>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="mt-12 text-center">
+                <p class="text-gray-600">T-Bridge의 휴대폰 견적 받기는 이렇게 진행돼요!</p>
+
+                <div class="mt-8 p-6 bg-gray-50 rounded-2xl text-left space-y-6">
+                    <div class="relative timeline-item">
+                        <div class="flex items-start">
+                            <div class="z-10 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mr-4 flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">견적요청</h4>
+                                <p class="text-sm text-gray-500 mt-1">견적을 받기 위해 몇 가지 질문에 답하기!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative timeline-item">
+                        <div class="flex items-start">
+                            <div class="z-10 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mr-4 flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">견적수신</h4>
+                                <p class="text-sm text-gray-500 mt-1">매장에서 보낸 견적을 확인하고 비교하기!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative timeline-item">
+                        <div class="flex items-start">
+                            <div class="z-10 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mr-4 flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">상담진행</h4>
+                                <p class="text-sm text-gray-500 mt-1">맘에 드는 매장과 채팅 상담 시작하기!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative timeline-item">
+                        <div class="flex items-start">
+                            <div class="z-10 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mr-4 flex-shrink-0">4</div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">가입신청</h4>
+                                <p class="text-sm text-gray-500 mt-1">상담이 만족스러웠다면 개통을 위한 가입신청서 작성 및 접수하기!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8">
+                <div class="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg flex items-center">
+                    <i class="fas fa-exclamation-circle text-xl mr-3"></i>
+                    <p class="text-sm font-medium">휴대폰 개통 후 견적 내용과 개통 내용이 일치하는지 <span class="font-bold">반드시 확인</span>하시기 바랍니다!</p>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="flex-shrink-0 p-4 bg-white border-t border-gray-100">
+            <button id="startButton" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition">
+                시작하기
+            </button>
+        </footer>
+
+    </div>
+
+    <div id="bottomSheet" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end">
+        <div id="sheetContent" class="w-full max-w-sm bg-white rounded-t-2xl p-6 transform translate-y-full transition-transform duration-300 ease-in-out">
+            <div class="text-center mb-6">
+                <i class="far fa-hand-point-up text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-bold">채팅을 시작하기 전 꼭 읽어주세요!</h3>
+            </div>
+            <div class="space-y-4 text-left">
+                <div>
+                    <h4 class="font-bold">1. 고객 후기 확인하기</h4>
+                    <p class="text-sm text-gray-600 mt-1">다른 고객들의 후기를 읽고 매장에 대한 신뢰도를 확인해 보세요.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold">2. 사전승낙마크 확인하기</h4>
+                    <p class="text-sm text-gray-600 mt-1">사전승낙마크는 이동통신사와 정한 기준을 통과한 매장에만 부여되는 신뢰의 표시예요.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold">3. 개통 후 확인하기</h4>
+                    <p class="text-sm text-gray-600 mt-1">개통 후 수신받는 개통내역 안내문자나 고객센터 앱을 통하여 아래의 항목이 일치하는지 반드시 확인하세요!<br><span class="text-blue-600 font-semibold">개통한 기기 · 할부금과 기간 · 요금제 · 할인 유형(공시지원금 or 선택약정)</span></p>
+                </div>
+            </div>
+            <div class="mt-8 grid grid-cols-2 gap-4">
+                <button id="closeButton" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">뒤로가기</button>
+                <a href="order_step2.html" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 text-center">확인</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const bottomSheet = document.getElementById('bottomSheet');
+        const sheetContent = document.getElementById('sheetContent');
+        const closeButton = document.getElementById('closeButton');
+
+        function openSheet() {
+            bottomSheet.classList.remove('hidden');
+            // A short delay is needed to allow the 'hidden' class to be removed and the initial state to be rendered
+            // before applying the transition.
+            setTimeout(() => {
+                sheetContent.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        function closeSheet() {
+            sheetContent.classList.add('translate-y-full');
+            // Wait for the transition to finish before hiding the overlay
+            setTimeout(() => {
+                bottomSheet.classList.add('hidden');
+            }, 300);
+        }
+
+        startButton.addEventListener('click', openSheet);
+        closeButton.addEventListener('click', closeSheet);
+
+        // Close sheet when clicking on the overlay
+        bottomSheet.addEventListener('click', (event) => {
+            if (event.target === bottomSheet) {
+                closeSheet();
+            }
+        });
+    </script>
+</body>
+</html>
