@@ -11,7 +11,10 @@ services:
       - ./user-app:/app
       - /app/node_modules
       - /app/.next
-    command: sh -c "pnpm install && pnpm run dev"
+    # Polling 환경 변수 추가
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
 
@@ -21,12 +24,15 @@ services:
       context: ./biz-app
       dockerfile: Dockerfile.dev
     ports:
-      - "3001:3000"
+      - "3100:3000"
     volumes:
       - ./biz-app:/app
       - /app/node_modules
       - /app/.next
-    command: sh -c "pnpm install && pnpm run dev"
+    # Polling 환경 변수 추가
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
 
@@ -36,12 +42,15 @@ services:
       context: ./admin-app
       dockerfile: Dockerfile.dev
     ports:
-      - "3002:3000"
+      - "3200:3000"
     volumes:
       - ./admin-app:/app
       - /app/node_modules
       - /app/.next
-    command: sh -c "pnpm install && pnpm run dev"
+    # Polling 환경 변수 추가
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
 
@@ -62,7 +71,7 @@ services:
       context: ./biz-app
       dockerfile: Dockerfile.prod
     ports:
-      - "8001:3000"
+      - "8100:3000"
     profiles:
       - "prod"
 
@@ -72,6 +81,6 @@ services:
       context: ./admin-app
       dockerfile: Dockerfile.prod
     ports:
-      - "8002:3000"
+      - "8200:3000"
     profiles:
       - "prod"

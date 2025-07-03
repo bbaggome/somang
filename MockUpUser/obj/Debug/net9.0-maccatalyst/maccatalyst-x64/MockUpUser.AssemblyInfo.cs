@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MockUpUser")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+fdd20d8417537a8c63b9e01aa97bc3a613ca9b66")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+78fc43b708a52a1d9c7ec9aebfa857c2b76e4c7c")]
 [assembly: System.Reflection.AssemblyProductAttribute("MockUpUser")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MockUpUser")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
