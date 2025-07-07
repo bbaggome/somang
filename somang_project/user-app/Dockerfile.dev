@@ -14,7 +14,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # 4. 의존성 설치를 위해 package.json 파일을 먼저 복사합니다.
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # 5. 의존성을 설치합니다.
 RUN pnpm install

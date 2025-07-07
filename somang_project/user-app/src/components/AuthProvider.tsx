@@ -25,17 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 현재 세션을 가져와 상태를 설정합니다.
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+    // 1. 컴포넌트가 마운트될 때, 로컬 세션이 유효한지 서버에 직접 확인합니다.
+    const checkUser = async () => {
+      // getSession() 대신 getUser()를 사용하여 서버에 직접 사용자 정보를 요청합니다.
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user); // 사용자가 DB에 없으면 이 값은 null이 됩니다.
+
+      // 사용자 정보를 가져온 후 세션 정보도 함께 설정합니다.
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+
       setIsLoading(false);
     };
 
-    getSession();    
+    checkUser();
 
-    // supabase의 인증 상태 변경(로그인, 로그아웃 등)을 실시간으로 감지합니다.
+    // 2. 로그인, 로그아웃 등 실시간 인증 상태 변경을 감지하는 리스너는 그대로 유지합니다.
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -44,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // 컴포넌트 언마운트 시 구독 해제 (리스너 정리)
+    // 3. 컴포넌트 언마운트 시 구독 해제 (메모리 누수 방지)
     return () => {
       authListener.subscription.unsubscribe();
     };

@@ -6,8 +6,8 @@
 | :--- | :--- |
 | **기능 ID** | `FE-COM-010` |
 | **기능명** | 보안 채팅 (Secure Chat) |
-| **설명** | 사용자가 견적을 수락한 판매점과 1:1로 안전하게 소통할 수 있는 실시간 채팅 기능입니다. 모든 대화 내용은 서버에 저장되어 향후 발생할 수 있는 분쟁의 증거 자료로 활용됩니다. |
-| **관련 서비스** | -   **사용자 앱 (TBridge.Maui)**: 최종 사용자의 채팅 UI 제공<br>-   **사업주 웹 포털 (TBridge.Web)**: 판매점주의 채팅 UI 제공<br>-   **백엔드 (Supabase)**: `chat_rooms`, `chat_messages` 테이블에 대화 내용 저장 및 `Realtime` 서비스를 통한 메시지 실시간 중계 |
+| **설명** | 사용자와 판매점이 1:1로 안전하게 소통하는 실시간 채팅 기능입니다. 모든 채팅 데이터는 독립된 **Chatting 프로젝트**에서 중앙 관리됩니다. |
+| **관련 서비스** | -   **user-app**: 최종 사용자의 채팅 UI 제공<br>-   **biz-app**: 판매점주의 채팅 UI 제공<br>-   **chatting-app (Supabase Project)**: 채팅 데이터 저장 및 실시간 메시지 중계 |
 
 ### 2. 요구사항
 
@@ -16,54 +16,15 @@
 
 #### 2.2. 세부 요구사항 (기능 명세)
 
--   사용자가 특정 판매점의 견적을 수락하면, 해당 판매점과의 1:1 채팅방이 자동으로 개설되어야 한다.
--   사용자와 판매점주는 자신의 계정으로 활성화된 채팅방 목록을 확인할 수 있어야 한다.
--   채팅방 내에서 텍스트 메시지를 실시간으로 주고받을 수 있어야 한다.
--   사진이나 문서 등 이미지 파일을 전송하는 기능이 제공되어야 한다.
--   모든 메시지에는 전송 시각이 표시되어야 하며, 서버에 영구적으로 기록되어야 한다.
--   채팅방 내에서 상대방을 신고하거나 채팅방에서 나갈 수 있는 옵션이 있어야 한다.
--   새로운 메시지가 수신되면 푸시 알림을 통해 알려주어야 한다.
-
-#### 2.3. 비기능적 요구사항
-
--   **실시간성**: 메시지 전송 후 1초 이내에 상대방의 화면에 해당 메시지가 표시되어야 한다. (Supabase Realtime 활용)
--   **보안**: 사용자는 자신이 참여한 채팅방의 메시지만 조회 및 전송할 수 있어야 한다. 이는 `chat_rooms`와 `chat_messages` 테이블의 RLS 정책을 통해 강제된다.
--   **안정성**: 네트워크가 불안정한 환경에서도 메시지 전송을 재시도하고, 전송 실패 시 명확한 피드백을 제공해야 한다. 메시지 유실은 없어야 한다.
+-   견적 수락 등 특정 조건이 충족되면, `user-app`과 `biz-app`은 API를 통해 `chatting-app`에 채팅방 생성을 요청한다.
+-   `chatting-app`은 고유한 `room_id`를 생성하고, `user-app`과 `biz-app`은 이 ID를 각자의 DB에 저장한다.
+-   `user-app`과 `biz-app`의 클라이언트는 **`chatting-app`의 Supabase 클라이언트**를 사용하여 채팅방에 연결하고 메시지를 송수신한다.
+-   모든 메시지는 `chatting-app`의 DB에 영구적으로 기록된다.
 
 ### 3. 데이터 흐름
 
-1.  **채팅방 생성**: 사용자가 견적을 수락하는 시점(`FE-QT-020` 플로우)에, DB 함수가 `chat_rooms` 테이블에 `user_id`와 `store_id`를 포함한 새 레코드를 생성합니다.
-2.  **채팅방 입장 및 구독**: 사용자와 판매점주가 각자의 클라이언트(앱/웹)에서 채팅방에 입장하면, 클라이언트는 Supabase Realtime 서비스의 특정 채널(예: `chat_room:{room_id}`)을 구독하기 시작합니다.
-3.  **메시지 전송**: 한쪽 사용자가 메시지를 입력하고 '전송' 버튼을 클릭합니다.
-4.  **API 요청**: 클라이언트는 메시지 내용, `room_id`, `sender_id`를 담아 백엔드의 `POST /chat_messages` 엔드포인트로 API 요청을 보냅니다.
-5.  **백엔드 처리**: Supabase는 JWT로 사용자를 인증하고, RLS 정책을 통해 해당 사용자가 이 채팅방의 멤버가 맞는지 확인한 후 `chat_messages` 테이블에 메시지를 `INSERT`합니다.
-6.  **실시간 브로드캐스트**: `chat_messages` 테이블에 새로운 행이 삽입되는 이벤트가 발생하면, Supabase Realtime은 이 이벤트를 감지하고 해당 채널(`chat_room:{room_id}`)을 구독 중인 모든 클라이언트에게 새로운 메시지 데이터를 푸시합니다.
-7.  **실시간 수신 및 UI 업데이트**: 상대방 클라이언트는 Realtime 푸시를 받아 채팅 UI에 새로운 메시지를 즉시 렌더링합니다.
-8.  **푸시 알림 (선택적)**: 메시지 `INSERT` 이벤트는 DB 트리거를 통해 엣지 함수를 호출할 수 있습니다. 이 엣지 함수는 상대방이 앱을 사용 중이지 않을 경우, 푸시 알림(FCM/APNS)을 보내는 로직을 수행합니다.
-
-#### Sequence Diagram
-
-```mermaid
-sequenceDiagram
-    participant UserApp as 사용자 앱
-    participant OwnerPortal as 사업주 포털
-    participant Realtime as Supabase Realtime
-    participant API as Supabase API
-    participant DB as PostgreSQL DB
-
-    UserApp->>API: 1. 메시지 전송 (POST /chat_messages)
-    activate API
-    API->>DB: 2. RLS 정책 확인 후 DB에 메시지 저장
-    deactivate API
-    activate DB
-
-    DB->>Realtime: 3. chat_messages 테이블 INSERT 이벤트 발생
-    deactivate DB
-    activate Realtime
-    Realtime-->>UserApp: 4a. [보낸 사람]에게 메시지 전송 확인
-    Realtime-->>OwnerPortal: 4b. [받는 사람]에게 새 메시지 실시간 푸시
-    deactivate Realtime
-
-    OwnerPortal->>OwnerPortal: 5. 채팅 UI에 새 메시지 표시
-
-```
+1.  **채팅방 생성**: `biz-app`에서 견적을 수락하면, `biz-app`의 백엔드가 `chatting-app`에 채팅방 생성을 요청하고 `room_id`를 받아 자신의 DB에 저장합니다.
+2.  **채팅방 입장 및 구독**: `user-app`과 `biz-app` 클라이언트는 `room_id`를 기반으로 **`chatting-app`의 Realtime 서비스**에 연결하고 채널을 구독합니다.
+3.  **메시지 전송**: 사용자가 메시지를 보내면, 해당 앱의 클라이언트는 **`chatting-app`의 API**를 호출하여 메시지를 저장합니다.
+4.  **실시간 브로드캐스트**: `chatting-app`의 DB에 메시지가 저장되면, Realtime 서비스가 구독 중인 모든 클라이언트(user, biz)에게 새 메시지를 푸시합니다.
+5.  **실시간 수신**: 각 클라이언트는 새 메시지를 받아 화면에 렌더링합니다.

@@ -15,6 +15,7 @@ erDiagram
         uuid id PK "FK to auth.users.id"
         text role
         text name
+        text phone_number
         timestamptz created_at
         timestamptz deleted_at
     }
@@ -30,6 +31,11 @@ erDiagram
         uuid id PK
         uuid owner_id FK
         text name
+        text store_type
+        text business_method
+        text phone_number
+        text business_registration_number "UK"
+        text pre_approval_number
         text zip_code
         text base_address
         text detail_address
