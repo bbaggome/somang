@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -16,8 +16,31 @@ const KakaoIcon = () => (
 export default function LoginPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLogginIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // URL 파라미터에서 에러 확인
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      switch (urlError) {
+        case 'session_exchange_failed':
+          setError('로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+          break;
+        case 'callback_error':
+          setError('인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+          break;
+        default:
+          setError('로그인에 실패했습니다. 다시 시도해주세요.');
+      }
+      
+      // URL에서 에러 파라미터 제거
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('error');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // 로딩이 끝나고, 이미 유저 정보가 있으면 메인 페이지로 리디렉션
@@ -26,9 +49,7 @@ export default function LoginPage() {
     }    
   }, [user, isAuthLoading, router]);
 
-  // ====================================================================
-  // 2. 카카오 로그인 핸들러 함수 수정
-  // ====================================================================
+  // 카카오 로그인 핸들러 함수
   const handleKakaoLogin = async () => {
     setIsLoggingIn(true);
     setError(null);
@@ -36,6 +57,9 @@ export default function LoginPage() {
       // Supabase의 OAuth 로그인 기능을 호출합니다.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
       if (error) {
@@ -46,9 +70,6 @@ export default function LoginPage() {
       setError('로그인에 실패했습니다. 다시 시도해주세요.');
       setIsLoggingIn(false);
     }
-    // 성공 시, Supabase가 카카오 로그인 페이지로 리디렉션합니다.
-    // 로그인 완료 후에는 카카오가 Supabase Redirect URI로 돌려보내고,
-    // Supabase가 다시 우리 앱의 페이지로 돌려보내며 로그인 세션이 생성됩니다.
   };
 
   // 인증 상태를 확인중이거나 이미 로그인 되어있다면 로딩 표시
@@ -59,8 +80,6 @@ export default function LoginPage() {
         </div>
     );
   }
-
-
 
   return (
     <div className="bg-gray-100 flex items-center justify-center min-h-screen ">
@@ -79,7 +98,11 @@ export default function LoginPage() {
           </h2>
         </main>
         <footer className="pb-8">
-          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
           <button
             onClick={handleKakaoLogin}
             disabled={isLogginIn}

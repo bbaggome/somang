@@ -11,7 +11,7 @@
     
 3. 아래의 SQL 코드를 붙여넣고 **RUN** 버튼을 눌러 테이블을 생성합니다. 이 코드는 설계 문서에 정의된 `profiles` 테이블을 생성합니다.
     
-    ```
+    ```sql
     -- 1. profiles 테이블 생성
     CREATE TABLE public.profiles (
         id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

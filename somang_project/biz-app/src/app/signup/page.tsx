@@ -23,6 +23,19 @@ declare global {
   }
 }
 
+/**
+ * 랜덤 닉네임을 생성하는 함수
+ * @returns {string} "형용사 + 명사 + 숫자" 형태의 랜덤 닉네임
+ */
+const generateRandomName = () => {
+    const adjectives = ["용감한", "슬기로운", "친절한", "빛나는", "행복한", "성실한", "고요한"];
+    const nouns = ["호랑이", "독수리", "사자", "돌고래", "거북이", "기린", "다람쥐"];
+    const randomNumber = Math.floor(Math.random() * 1000);
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    return `${adjective}${noun}${randomNumber}`;
+};
+
 export default function BizSignupPage() {
   const [formData, setFormData] = useState({
     storeType: '',
@@ -111,14 +124,19 @@ export default function BizSignupPage() {
     
     setIsSubmitting(true);
     try {
+      // 랜덤 닉네임 생성
+      const nickName = generateRandomName();
+
       // 1. 사용자 계정 생성
       const { data: { user }, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        phone: formData.storePhone,
         options: { 
           data: { 
-            name: formData.sellerName, 
-            role: 'owner'            
+            //name: formData.sellerName, 
+            name: nickName, // 랜덤 닉네임 사용
+            role: 'owner'
           } 
         }
       });

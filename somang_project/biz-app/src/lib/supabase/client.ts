@@ -10,7 +10,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// 고유한 스토리지 Key 정의
+const storageKey = 'biz-token';
+
 // 제안: 아래 주석을 현재 코드에 맞게 수정하세요.
 // 현재 코드는 createBrowserClient를 올바르게 사용하고 있습니다.
 // 클라이언트 컴포넌트에서는 createBrowserClient를 사용합니다.
-export const supabase = createBrowserClient( supabaseUrl, supabaseAnonKey ); //
+export const supabase = createBrowserClient( 
+  supabaseUrl, 
+  supabaseAnonKey, 
+  {
+    auth:{
+      storageKey: storageKey, // 스토리지 키 설정
+  }
+});
