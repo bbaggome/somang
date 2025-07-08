@@ -23,7 +23,7 @@ export default function LoginPage() {
     // 로딩이 끝나고, 이미 유저 정보가 있으면 메인 페이지로 리디렉션
     if (!isAuthLoading && user) {
       router.push('/');
-    }
+    }    
   }, [user, isAuthLoading, router]);
 
   // ====================================================================
