@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# T-BRIDGE User App
 
-## Getting Started
+가장 투명한 통신 견적 비교 서비스의 사용자 앱입니다.
 
-First, run the development server:
+## 🚀 기능
 
+- ✅ 카카오 소셜 로그인
+- ✅ 자동 프로필 생성 및 랜덤 닉네임
+- ✅ 세션 관리 및 보안
+- ✅ TypeScript 기반 타입 안전성
+- ✅ 반응형 디자인
+
+## 🛠️ 기술 스택
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS 4
+- **Authentication**: Supabase Auth (카카오 OAuth)
+- **Database**: Supabase PostgreSQL
+- **Package Manager**: pnpm
+
+## 📦 설치 및 실행
+
+### 1. 의존성 설치
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 환경 변수 설정
+`.env.local` 파일을 생성하고 다음 내용을 추가:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 개발 서버 실행
+```bash
+pnpm dev
+```
 
-## Learn More
+### 4. 빌드
+```bash
+pnpm build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🏗️ 프로젝트 구조
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── auth/           # 인증 관련 라우트
+│   ├── debug/          # 디버그 페이지 (개발용)
+│   └── login/          # 로그인 페이지
+├── components/         # React 컴포넌트
+├── config/            # 설정 파일들
+├── hooks/             # 커스텀 훅
+├── lib/              # 유틸리티 및 라이브러리
+└── types/            # TypeScript 타입 정의
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔐 보안
 
-## Deploy on Vercel
+- Row Level Security (RLS) 정책 적용
+- 서버 사이드 세션 검증
+- 환경 변수를 통한 민감 정보 관리
+- 프로덕션에서 디버그 페이지 자동 비활성화
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧪 테스트
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# 테스트 라이브러리 설치 (선택사항)
+pnpm add -D vitest @testing-library/react @testing-library/jest-dom
+
+# 테스트 실행
+pnpm test
+```
+
+## 🚀 배포
+
+### Docker를 사용한 배포
+
+```bash
+# 개발용
+docker build -f Dockerfile.dev -t user-app:dev .
+docker run -p 3000:3000 user-app:dev
+
+# 프로덕션용
+docker build -f Dockerfile.prod -t user-app:prod .
+docker run -p 3000:3000 user-app:prod
+```
+
+## 📝 라이센스
+
+이 프로젝트는 비공개 프로젝트입니다.

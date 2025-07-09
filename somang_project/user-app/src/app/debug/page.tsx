@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
 export default function DebugPage() {
+  // 프로덕션 환경에서는 접근 차단
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>This page is not available in production.</p>
+      </div>
+    );
+  }
+  
   const [sessionInfo, setSessionInfo] = useState<any>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [localStorageInfo, setLocalStorageInfo] = useState<any>({});

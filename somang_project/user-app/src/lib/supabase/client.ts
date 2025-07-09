@@ -1,25 +1,42 @@
 import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// 환경 변수 검증 강화
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    'Supabase URL 또는 Anon Key가 .env.local 파일에 설정되지 않았습니다. ' +
-    '파일 위치, 변수명, 서버 재시작 여부를 확인해주세요.'
+    'Supabase 환경 변수가 누락되었습니다.\n' +
+    '다음을 확인해주세요:\n' +
+    '1. .env.local 파일이 프로젝트 루트에 있는지\n' +
+    '2. NEXT_PUBLIC_SUPABASE_URL 설정 확인\n' +
+    '3. NEXT_PUBLIC_SUPABASE_ANON_KEY 설정 확인\n' +
+    '4. 개발 서버 재시작'
   );
 }
 
-// Supabase 프로젝트에서 추출한 참조 ID
+// URL 형식 검증
+if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
+  throw new Error(`잘못된 Supabase URL 형식: ${supabaseUrl}`);
+}
+
+// Supabase 프로젝트 참조 ID 추출
 const supabaseRef = supabaseUrl.split('//')[1]?.split('.')[0];
+if (!supabaseRef) {
+  throw new Error('Supabase 참조 ID를 추출할 수 없습니다.');
+}
 
-console.log('Supabase 클라이언트 초기화:', {
-  url: supabaseUrl,
-  ref: supabaseRef,
-  hasAnonKey: !!supabaseAnonKey
-});
+// 개발 환경에서만 로그 출력 (한 번만)
+if (process.env.NODE_ENV === 'development') {
+  console.log('Supabase 클라이언트 초기화:', {
+    url: supabaseUrl,
+    ref: supabaseRef,
+    hasAnonKey: !!supabaseAnonKey
+  });
+}
 
-export const supabase = createBrowserClient(
+export const supabase = createBrowserClient<Database>(
   supabaseUrl,
   supabaseAnonKey,
   {
@@ -30,7 +47,7 @@ export const supabase = createBrowserClient(
           if (typeof window === 'undefined') return null;
           try {
             const item = window.localStorage.getItem(key);
-            console.log(`로컬 스토리지에서 읽기 - ${key}:`, item ? '데이터 존재' : '데이터 없음');
+            // 로그 빈도 줄임 - 중요한 것만 출력
             return item;
           } catch (error) {
             console.error('로컬 스토리지 읽기 에러:', error);
@@ -41,7 +58,7 @@ export const supabase = createBrowserClient(
           if (typeof window === 'undefined') return;
           try {
             window.localStorage.setItem(key, value);
-            console.log(`로컬 스토리지에 저장 - ${key}:`, '저장 완료');
+            // 로그 빈도 줄임
           } catch (error) {
             console.error('로컬 스토리지 저장 에러:', error);
           }
@@ -50,7 +67,7 @@ export const supabase = createBrowserClient(
           if (typeof window === 'undefined') return;
           try {
             window.localStorage.removeItem(key);
-            console.log(`로컬 스토리지에서 삭제 - ${key}:`, '삭제 완료');
+            // 로그 빈도 줄임
           } catch (error) {
             console.error('로컬 스토리지 삭제 에러:', error);
           }
@@ -59,6 +76,8 @@ export const supabase = createBrowserClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      // 토큰 갱신 빈도 조정
+      flowType: 'pkce',
     },
   }
 );
