@@ -5,51 +5,93 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import KakaoIcon from '@/components/KakaoIcon';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user, isLoading } = useAuth();
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const { user, isLoading, isInitializing } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // URL 해시에서 토큰 처리
   useEffect(() => {
-    const handleHashParams = () => {
+    const handleHashParams = async () => {
       const hash = window.location.hash;
+      
       if (hash && hash.includes('access_token=')) {
-        const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+        console.log('토큰 감지됨, 세션 설정 중...');
+        setIsProcessingAuth(true);
         
-        if (accessToken && refreshToken) {
-          supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          }).then(() => {
-            window.history.replaceState(null, '', window.location.pathname);
-            router.replace('/');
-          });
+        try {
+          const params = new URLSearchParams(hash.substring(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            // URL 정리
+            window.history.replaceState(null, '', '/login');
+            
+            // 세션 설정
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (error) {
+              console.error('세션 설정 실패:', error);
+              setError('로그인 처리 중 오류가 발생했습니다.');
+              setIsProcessingAuth(false);
+              return;
+            }
+            
+            console.log('세션 설정 완료, 잠시 후 홈으로 이동');
+            
+            // 짧은 대기 후 리디렉션 (AuthProvider 상태 업데이트 대기)
+            setTimeout(() => {
+              setIsProcessingAuth(false);
+              router.replace('/');
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('토큰 처리 실패:', error);
+          setError('로그인 처리 중 오류가 발생했습니다.');
+          setIsProcessingAuth(false);
+          window.history.replaceState(null, '', '/login');
         }
       }
     };
 
-    if (!isLoading) {
-      handleHashParams();
-    }
-  }, [isLoading, router]);
+    // 컴포넌트 마운트 후 해시 확인
+    const timer = setTimeout(() => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=')) {
+        handleHashParams();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   // 이미 로그인된 사용자는 홈으로 리디렉션
   useEffect(() => {
-    if (!isLoading && user) {
+    // 초기화 완료 후 사용자가 있고, 인증 처리 중이 아닐 때만 리디렉션
+    if (!isInitializing && !isProcessingAuth && user) {
+      console.log('로그인된 사용자 감지, 홈으로 이동');
       router.replace('/');
     }
-  }, [user, isLoading, router]);
+  }, [user, isInitializing, isProcessingAuth, router]);
 
   // URL 파라미터에서 에러 메시지 처리
   useEffect(() => {
     const errorParam = searchParams.get('error');
-    if (errorParam) {
+    if (errorParam && !isProcessingAuth) {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=')) {
+        return;
+      }
+      
       switch (errorParam) {
         case 'session_exchange_failed':
           setError('로그인 세션 생성에 실패했습니다.');
@@ -58,16 +100,18 @@ export default function LoginPage() {
           setError('로그인 처리 중 오류가 발생했습니다.');
           break;
         case 'no_auth_code':
-          setError('인증 코드가 없습니다.');
+          if (!hash || !hash.includes('access_token=')) {
+            setError('인증 코드가 없습니다.');
+          }
           break;
         default:
           setError('로그인 중 오류가 발생했습니다.');
       }
     }
-  }, [searchParams]);
+  }, [searchParams, isProcessingAuth]);
 
   const handleKakaoLogin = async () => {
-    if (isLoggingIn) return;
+    if (isLoggingIn || isProcessingAuth) return;
 
     try {
       setIsLoggingIn(true);
@@ -76,7 +120,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/login`,
         },
       });
 
@@ -90,21 +134,42 @@ export default function LoginPage() {
     }
   };
 
-  // 로딩 중이거나 이미 로그인된 경우
-  if (isLoading || user) {
+  // 초기화 중인 경우
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl p-8 flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
+        <LoadingOverlay 
+          isVisible={true} 
+          message="초기화 중..."
+        />
       </div>
     );
   }
 
+  // 인증 처리 중인 경우
+  if (isProcessingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <LoadingOverlay 
+          isVisible={true} 
+          message="로그인 처리 중..."
+        />
+      </div>
+    );
+  }
+
+  // 이미 로그인된 경우
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-      {/* 메인 카드 */}
+      <LoadingOverlay 
+        isVisible={isLoading || isLoggingIn} 
+        message={isLoggingIn ? "로그인 중..." : "로딩 중..."}
+      />
+      
       <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
         {/* 헤더 */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-center">
@@ -130,9 +195,9 @@ export default function LoginPage() {
 
           {/* 서비스 특징 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 text-sm">📱</span>
+            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 text-lg">📱</span>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">투명한 견적 비교</p>
@@ -140,9 +205,9 @@ export default function LoginPage() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-3 bg-gray-50">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-sm">💬</span>
+            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-green-600 text-lg">💬</span>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">1:1 전문 상담</p>
@@ -150,9 +215,9 @@ export default function LoginPage() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-3 bg-gray-50">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <span className="text-purple-600 text-sm">⚡</span>
+            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <span className="text-purple-600 text-lg">⚡</span>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">빠른 견적 확인</p>
@@ -166,7 +231,7 @@ export default function LoginPage() {
         <div className="p-8 pt-0">
           {/* 에러 메시지 */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 mb-6 flex items-start">
+            <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 flex items-start">
               <div className="flex-shrink-0 mr-3">
                 <span className="text-red-500">⚠️</span>
               </div>
@@ -186,14 +251,19 @@ export default function LoginPage() {
           {/* 로그인 버튼 */}
           <button
             onClick={handleKakaoLogin}
-            disabled={isLoggingIn}
-            className="w-full flex items-center justify-center bg-[#FEE500] text-gray-800 py-4 font-bold text-lg transition-all duration-200 hover:bg-[#FDD835] hover:scale-105 active:scale-100 disabled:opacity-75 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl mb-6"
+            disabled={isLoggingIn || isProcessingAuth}
+            className="w-full flex items-center justify-center bg-[#FEE500] text-gray-800 py-4 rounded-2xl font-bold text-lg transition-all duration-200 hover:bg-[#FDD835] hover:scale-105 active:scale-100 disabled:opacity-75 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl mb-6"
           >
-            {!isLoggingIn && <KakaoIcon />}
+            {!isLoggingIn && !isProcessingAuth && <KakaoIcon />}
             {isLoggingIn ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
                 로그인 중...
+              </>
+            ) : isProcessingAuth ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
+                처리 중...
               </>
             ) : (
               '카카오 로그인'

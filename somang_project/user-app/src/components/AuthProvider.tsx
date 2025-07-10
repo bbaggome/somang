@@ -12,6 +12,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // 프로필 생성 함수 (랜덤 닉네임 포함)
   const createProfile = async (userId: string, userEmail: string) => {
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 프로필 조회 함수
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         if (error.code === 'PGRST116') {
           // 프로필이 없으면 생성
-          const newProfile = await createProfile(userId, user?.email || '');
+          const newProfile = await createProfile(userId, userEmail);
           return newProfile;
         }
         throw error;
@@ -94,15 +95,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 초기 세션 확인
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
+      try {
+        console.log('초기 세션 확인 시작');
+        setIsInitializing(true);
+        setIsLoading(true);
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('초기 세션:', session?.user?.email || 'null');
+        
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const profileData = await fetchProfile(session.user.id, session.user.email || '');
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
+        
+      } catch (error) {
+        console.error('초기 세션 확인 실패:', error);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        // 초기화 완료
+        setIsLoading(false);
+        setIsInitializing(false);
+        console.log('초기 세션 확인 완료');
       }
-      
-      setIsLoading(false);
     };
 
     getInitialSession();
@@ -111,25 +130,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email || 'null');
+      
+      // 초기화가 완료된 후에만 상태 변경 처리
+      if (!isInitializing) {
+        setIsLoading(true);
+      }
+      
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
+        const profileData = await fetchProfile(session.user.id, session.user.email || '');
         setProfile(profileData);
       } else {
         setProfile(null);
       }
       
-      setIsLoading(false);
+      // 초기화가 완료된 후에만 로딩 상태 해제
+      if (!isInitializing) {
+        setIsLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, []); // 빈 의존성 배열로 마운트시에만 실행
 
   const value = {
     user,
     profile,
     isLoading,
+    isInitializing,
     signOut,
   };
 
