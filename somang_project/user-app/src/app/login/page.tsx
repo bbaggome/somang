@@ -93,7 +93,7 @@ export default function LoginPage() {
   // 로딩 중이거나 이미 로그인된 경우
   if (isLoading || user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl p-8 flex flex-col items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
           <p className="text-gray-600">로딩 중...</p>
@@ -166,7 +166,7 @@ export default function LoginPage() {
         <div className="p-8 pt-0">
           {/* 에러 메시지 */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-4 mb-6 flex items-start">
+            <div className="bg-red-50 border border-red-200 text-red-600 mb-6 flex items-start">
               <div className="flex-shrink-0 mr-3">
                 <span className="text-red-500">⚠️</span>
               </div>
