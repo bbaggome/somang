@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,21 +20,10 @@ export const metadata: Metadata = {
   authors: [{ name: "T-BRIDGE Team" }],
 };
 
-// viewport를 별도로 분리
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
 };
-
-// 로딩 컴포넌트 - Hydration 안전
-function LoadingFallback() {
-  return (
-    <div className='flex items-center justify-center min-h-screen'>
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p className="ml-3 text-gray-600">Loading...</p>
-    </div>
-  );
-}
 
 export default function RootLayout({
   children,
@@ -49,13 +36,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </Suspense>
-        </ErrorBoundary>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

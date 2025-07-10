@@ -1,26 +1,16 @@
-import type { User, Session } from '@supabase/supabase-js';
-
-export interface UserProfile {
+export interface Profile {
   id: string;
   role: 'user' | 'owner' | 'admin';
-  name: string | null;
-  nick_name: string | null;
-  phone_number: string | null;
-  email: string | null;
-  avatar_url: string | null;
+  name: string;
+  nick_name?: string;
+  phone_number?: string;
   created_at: string;
-  deleted_at: string | null;
+  deleted_at?: string;
 }
 
 export interface AuthContextType {
-  user: User | null;
-  profile: UserProfile | null;
-  session: Session | null;
+  user: any; // Supabase User 타입
+  profile: Profile | null;
   isLoading: boolean;
-}
-
-export interface AuthError {
-  code: string;
-  message: string;
-  details?: any;
+  signOut: () => Promise<void>;
 }

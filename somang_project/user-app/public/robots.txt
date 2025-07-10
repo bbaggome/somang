@@ -1,0 +1,29 @@
+# T-BRIDGE 로봇 규칙
+User-agent: *
+Allow: /
+
+# 검색하지 않을 페이지들
+Disallow: /api/
+Disallow: /auth/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /debug/
+
+# 크롤링 속도 제한 (선택사항)
+Crawl-delay: 1
+
+# 사이트맵 위치
+Sitemap: https://t-bridge.co.kr/sitemap.xml
+
+# 주요 검색엔진별 특별 규칙
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: NaverBot
+Allow: /
+
+User-agent: DaumBot
+Allow: /
