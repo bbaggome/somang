@@ -79,7 +79,7 @@ export default function HomePage() {
       
       <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-center">
+        {/* <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-center">
           <div className="mb-4">
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
               <span className="text-2xl font-black text-blue-600">T</span>
@@ -87,7 +87,7 @@ export default function HomePage() {
             <h1 className="text-2xl font-black text-white">T-BRIDGE</h1>
             <p className="text-blue-100 text-sm mt-2">가장 투명한 통신 견적 비교</p>
           </div>
-        </div>
+        </div> */}
 
         {/* 컨텐츠 - 상단 부분 */}
         <div className="p-8 flex-1">

@@ -27,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning={true} // 하이드레이션 경고 억제 추가
       >
         {children}
         {/* Daum 우편번호 서비스를 위한 스크립트를 body 태그가 닫히기 직전에 추가합니다. */}

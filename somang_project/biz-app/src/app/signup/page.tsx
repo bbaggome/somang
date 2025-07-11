@@ -40,7 +40,8 @@ export default function BizSignupPage() {
   const [formData, setFormData] = useState({
     storeType: '',
     businessMethods: [] as string[],
-    businessName: '',
+    businessName: '', // 사업자상호명 (기존)
+    bizName: '', // 매장 상호명 (신규 추가)
     storePhone: '',
     businessRegNumber: '',
     preApprovalNumber: '',
@@ -87,6 +88,7 @@ export default function BizSignupPage() {
       if (data.documents && data.documents.length > 0) {
         const { x, y } = data.documents[0];
         setFormData(prev => ({ ...prev, longitude: parseFloat(x), latitude: parseFloat(y) }));
+        console.log('Set coordinates:', { longitude: x, latitude: y });
       }
     } catch (error) {
       console.error("주소 좌표 변환 실패:", error);
@@ -134,7 +136,6 @@ export default function BizSignupPage() {
         phone: formData.storePhone,
         options: { 
           data: { 
-            //name: formData.sellerName, 
             name: nickName, // 랜덤 닉네임 사용
             role: 'owner'
           } 
@@ -153,12 +154,13 @@ export default function BizSignupPage() {
       // 3. 업로드된 파일 URL 가져오기
       const { data: { publicUrl } } = supabase.storage.from('stores').getPublicUrl(filePath);
 
-      // 4. DB 함수(RPC) 호출로 모든 정보 저장
+      // 4. DB 함수(RPC) 호출로 모든 정보 저장 (biz_name 파라미터 추가)
       const { error: rpcError } = await supabase.rpc('handle_biz_signup', {
         p_user_id: user.id,
         p_store_type: formData.storeType,
         p_business_methods: formData.businessMethods,        
-        p_name: formData.businessName,
+        p_name: formData.businessName, // 사업자상호명
+        p_biz_name: formData.bizName, // 매장 상호명 (신규 추가)
         p_phone_number: formData.storePhone,
         p_business_registration_number: formData.businessRegNumber,
         p_pre_approval_number: formData.preApprovalNumber,
@@ -241,6 +243,21 @@ export default function BizSignupPage() {
                   placeholder="사업자등록증 상의 상호명을 입력하세요"
                   required
                 />
+              </Field>
+              {/* 신규 추가: 매장 상호명 필드 */}
+              <Field label="매장 상호명" id="bizName" required>
+                <input
+                  id="bizName"
+                  name="bizName"
+                  value={formData.bizName}
+                  onChange={handleInputChange}
+                  className="w-full form-input"
+                  placeholder="실제 운영하는 매장의 상호명을 입력하세요"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  고객에게 표시될 매장명입니다. (예: OO모바일, XX통신)
+                </p>
               </Field>
               <Field label="매장 연락처" id="storePhone" required>
                 <input
@@ -349,7 +366,6 @@ export default function BizSignupPage() {
             </div>
           </section>
 
-          {/* 4. 누락되었던 Field의 children(내용물)을 다시 채워 넣습니다. */}
           <section>
             <SectionHeader title="판매자 정보" />
             <div className="space-y-4">
