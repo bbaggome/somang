@@ -135,15 +135,18 @@ export default function HomePage() {
 
           {/* 서비스 안내 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-3 p-6 bg-blue-50 rounded-2xl">
-              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                <span className="text-blue-600 text-xl">📱</span>
+            <a href="/quote/mobile/step1" className="block">
+              <div className="flex items-center space-x-3 p-6 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-colors cursor-pointer">
+                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-blue-600 text-xl">📱</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">휴대폰 견적</h4>
+                  <p className="text-sm text-gray-600">다양한 통신사의 휴대폰 요금제를 비교해보세요</p>
+                </div>
+                <i className="fas fa-chevron-right text-blue-600"></i>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-1">휴대폰 견적</h4>
-                <p className="text-sm text-gray-600">다양한 통신사의 휴대폰 요금제를 비교해보세요</p>
-              </div>
-            </div>
+            </a>
             
             <div className="flex items-center space-x-3 p-6 bg-green-50 rounded-2xl">
               <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">

@@ -501,7 +501,7 @@ export default function BizSignupPage() {
           <div className="flex justify-center items-center gap-4 pt-8">
             <Link
               href="/"
-              className="btn-secondary w-40 text-center leading-[3rem]"
+              className="btn-secondary w-40 text-center"
             >
               취소
             </Link>
