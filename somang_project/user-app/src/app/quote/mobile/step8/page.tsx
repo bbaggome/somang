@@ -154,6 +154,7 @@ export default function MobileQuoteStep8Page() {
   };
 
   const handleConfirmAndRedirect = () => {
+    setShowConfirmModal(false);
     router.push('/');
   };
 
@@ -191,7 +192,7 @@ export default function MobileQuoteStep8Page() {
   // 데이터 검증 중이거나 리다이렉트 중일 때는 로딩 표시
   if (!hasCheckedData.current) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center overflow-hidden">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">데이터를 확인하고 있습니다...</p>
@@ -201,8 +202,8 @@ export default function MobileQuoteStep8Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-      <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center overflow-hidden">
+      <div className="w-full max-w-[500px] h-screen bg-white shadow-xl flex flex-col">
         {/* 헤더 */}
         <header className="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
           <button 
@@ -223,73 +224,75 @@ export default function MobileQuoteStep8Page() {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <main className="flex-grow overflow-y-auto p-6 pb-24">
-          <section>
-            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              입력하신 정보가 맞다면,<br />이제 견적을 받아볼까요?
-            </h2>
-            <p className="mt-2 text-gray-500 text-sm">
-              견적을 요청하시면, 매장 방문 개통부터 택배와 퀵으로 받을 수 있는 비대면 개통 견적까지 모두 받아볼 수 있어요!
-            </p>
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6 pb-6">
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+                입력하신 정보가 맞다면,<br />이제 견적을 받아볼까요?
+              </h2>
+              <p className="mt-2 text-gray-500 text-sm">
+                견적을 요청하시면, 매장 방문 개통부터 택배와 퀵으로 받을 수 있는 비대면 개통 견적까지 모두 받아볼 수 있어요!
+              </p>
 
-            {/* 요청 정보 요약 */}
-            <div className="mt-8 p-5 bg-gray-50 rounded-2xl space-y-4">
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 w-24 flex-shrink-0">구매 대상</span>
-                <span className="font-bold text-gray-800 text-right">
-                  {requestData.purchaseTarget === 'self' ? '본인' : '부모님/자녀 등'} - {getAgeText(requestData.age)}
-                </span>
+              {/* 요청 정보 요약 */}
+              <div className="mt-8 p-5 bg-gray-50 rounded-2xl space-y-4">
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 w-24 flex-shrink-0">구매 대상</span>
+                  <span className="font-bold text-gray-800 text-right">
+                    {requestData.purchaseTarget === 'self' ? '본인' : '부모님/자녀 등'} - {getAgeText(requestData.age)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 w-24 flex-shrink-0">현재 이용 내역</span>
+                  <span className="font-bold text-gray-800 text-right">
+                    {getCarrierText(requestData.currentCarrier)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 w-24 flex-shrink-0">희망 통신사</span>
+                  <span className="font-bold text-gray-800 text-right">
+                    {requestData.changeType === 'device_only' 
+                      ? `${getCarrierText(requestData.currentCarrier)} (${getChangeTypeText(requestData.changeType)})`
+                      : `${getCarrierText(requestData.newCarrier || '')} (${getChangeTypeText(requestData.changeType)})`
+                    }
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 w-24 flex-shrink-0">구매 모델</span>
+                  <span className="font-bold text-gray-800 text-right">
+                    {deviceInfo 
+                      ? `${deviceInfo.device_name} ${deviceInfo.storage_options[0]}GB | ${requestData.color === 'any' ? '색상무관' : requestData.color}`
+                      : '로딩 중...'
+                    }
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 w-24 flex-shrink-0">견적 받을 동네</span>
+                  <span className="font-bold text-gray-800 text-right">
+                    {requestData.locations.join(', ')}
+                  </span>
+                </div>
               </div>
-              
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 w-24 flex-shrink-0">현재 이용 내역</span>
-                <span className="font-bold text-gray-800 text-right">
-                  {getCarrierText(requestData.currentCarrier)}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 w-24 flex-shrink-0">희망 통신사</span>
-                <span className="font-bold text-gray-800 text-right">
-                  {requestData.changeType === 'device_only' 
-                    ? `${getCarrierText(requestData.currentCarrier)} (${getChangeTypeText(requestData.changeType)})`
-                    : `${getCarrierText(requestData.newCarrier || '')} (${getChangeTypeText(requestData.changeType)})`
-                  }
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 w-24 flex-shrink-0">구매 모델</span>
-                <span className="font-bold text-gray-800 text-right">
-                  {deviceInfo 
-                    ? `${deviceInfo.device_name} ${deviceInfo.storage_options[0]}GB | ${requestData.color === 'any' ? '색상무관' : requestData.color}`
-                    : '로딩 중...'
-                  }
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 w-24 flex-shrink-0">견적 받을 동네</span>
-                <span className="font-bold text-gray-800 text-right">
-                  {requestData.locations.join(', ')}
-                </span>
-              </div>
-            </div>
 
-            {/* 주의사항 */}
-            <div className="mt-8">
-              <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg flex items-center">
-                <span className="text-xl mr-3">⚠️</span>
-                <p className="text-sm font-medium">
-                  휴대폰 개통 후 견적 내용과 개통 내용이 일치하는지 <span className="font-bold">반드시 확인</span>하시기 바랍니다!
-                </p>
+              {/* 주의사항 */}
+              <div className="mt-8">
+                <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg flex items-center">
+                  <span className="text-xl mr-3">⚠️</span>
+                  <p className="text-sm font-medium">
+                    휴대폰 개통 후 견적 내용과 개통 내용이 일치하는지 <span className="font-bold">반드시 확인</span>하시기 바랍니다!
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         </main>
 
-        {/* 하단 버튼 */}
-        <footer className="p-4 bg-white flex-shrink-0">
+        {/* 하단 고정 버튼 */}
+        <footer className="flex-shrink-0 p-4 bg-white border-t border-gray-100 shadow-lg">
           <div className="text-center mb-4">
             <div className="inline-flex items-center bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
               <span className="mr-2">⚠️</span>
@@ -306,10 +309,10 @@ export default function MobileQuoteStep8Page() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className={`w-2/3 py-4 rounded-xl font-bold transition ${
+              className={`w-2/3 py-4 rounded-xl font-bold transition-all duration-200 active:scale-[0.98] ${
                 loading 
                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
               }`}
             >
               {loading ? '처리 중...' : '견적 요청하기'}
@@ -318,28 +321,77 @@ export default function MobileQuoteStep8Page() {
         </footer>
       </div>
 
-      {/* 완료 모달 */}
+      {/* Bottom Sheet 완료 모달 - step1과 동일한 스타일 */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 text-center shadow-xl max-w-sm mx-auto">
-            <div className="mb-4">
-              <svg className="w-16 h-16 text-blue-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
+        <div className="fixed inset-0 z-50 flex justify-center items-end">
+          {/* 배경 오버레이 - 어둡게 처리 */}
+          <div 
+            className={`absolute inset-0 bg-black transition-opacity duration-300 ease-out ${
+              showConfirmModal ? 'opacity-60' : 'opacity-0'
+            }`}
+            onClick={handleConfirmAndRedirect}
+          />
+          
+          {/* 모달 컨텐츠 */}
+          <div 
+            className={`relative w-full max-w-[500px] bg-white rounded-t-2xl p-6 transform transition-all duration-300 ease-out ${
+              showConfirmModal 
+                ? 'translate-y-0 opacity-100' 
+                : 'translate-y-full opacity-0'
+            }`}
+            style={{
+              animation: showConfirmModal ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
+            }}
+          >
+            {/* 상단 핸들바 */}
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
+            
+            <div className="text-center mb-6">
+              <div className="mb-4">
+                <svg className="w-16 h-16 text-blue-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">견적 요청이 완료되었습니다.</h3>
+              <p className="text-gray-600 mb-6">
+                매장들이 곧 견적을 보내드릴 예정입니다.<br />알림을 확인해주세요!
+              </p>
             </div>
-            <h3 className="text-xl font-bold mb-2">견적 요청이 완료되었습니다.</h3>
-            <p className="text-gray-600 mb-6">
-              매장들이 곧 견적을 보내드릴 예정입니다.<br />알림을 확인해주세요!
-            </p>
+            
             <button
               onClick={handleConfirmAndRedirect}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors"
             >
               확인
             </button>
           </div>
         </div>
       )}
+
+      {/* CSS 애니메이션 정의 */}
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideDown {
+          from {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
