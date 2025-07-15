@@ -312,12 +312,9 @@ export default function MobileQuoteStep6Page() {
           <div 
             className={`relative w-full max-w-[500px] bg-white rounded-t-2xl p-6 transform transition-all duration-300 ease-out ${
               showModal 
-                ? 'translate-y-0 opacity-100' 
-                : 'translate-y-full opacity-0'
+                ? 'translate-y-0 opacity-100 animate-slideUp' 
+                : 'translate-y-full opacity-0 animate-slideDown'
             }`}
-            style={{
-              animation: showModal ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
-            }}
           >
             {/* 상단 핸들바 */}
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
@@ -446,6 +443,14 @@ export default function MobileQuoteStep6Page() {
             transform: translateY(100%);
             opacity: 0;
           }
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
         }
       `}</style>
     </div>

@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .insert({
           id: userId,
-          role: 'user',
+          role: 'user', // user-app은 항상 'user' 역할
           name: userEmail.split('@')[0], // 이메일 앞부분을 기본 이름으로 사용
           nick_name: nickname,
         })
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 프로필 조회 함수
+  // 프로필 조회 함수 (권한 검증 추가)
   const fetchProfile = async (userId: string, userEmail: string) => {
     try {
       const { data, error } = await supabase
@@ -55,6 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return newProfile;
         }
         throw error;
+      }
+
+      // user-app에서는 'user' 역할만 허용
+      if (data.role !== 'user') {
+        console.warn('user-app에 부적절한 역할로 접근 시도:', data.role);
+        // 강제 로그아웃
+        await signOut();
+        return null;
       }
 
       return data;
@@ -79,8 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Supabase 로그아웃 에러:', error);
       }
       
-      // 로컬 스토리지 정리
-      localStorage.clear();
+      // 로컬 스토리지 정리 (user-token 키만)
+      localStorage.removeItem('sb-user-token-auth-token');
       sessionStorage.clear();
       
       console.log('AuthProvider 로그아웃 완료');
@@ -96,12 +104,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 초기 세션 확인
     const getInitialSession = async () => {
       try {
-        console.log('초기 세션 확인 시작');
+        console.log('user-app 초기 세션 확인 시작');
         setIsInitializing(true);
         setIsLoading(true);
         
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('초기 세션:', session?.user?.email || 'null');
+        console.log('user-app 초기 세션:', session?.user?.email || 'null');
         
         setUser(session?.user ?? null);
         
@@ -120,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 초기화 완료
         setIsLoading(false);
         setIsInitializing(false);
-        console.log('초기 세션 확인 완료');
+        console.log('user-app 초기 세션 확인 완료');
       }
     };
 
@@ -130,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email || 'null');
+      console.log('user-app Auth state changed:', event, session?.user?.email || 'null');
       
       // 초기화가 완료된 후에만 상태 변경 처리
       if (!isInitializing) {
