@@ -109,6 +109,13 @@ export default function MobileQuoteStep6Page() {
     setShowModal(true);
   };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedDevice(null);
+    setSelectedColor('');
+    setColorAgnostic(false);
+  };
+
   const handleConfirmSelection = () => {
     if (!selectedDevice || (!selectedColor && !colorAgnostic)) return;
 
@@ -140,8 +147,8 @@ export default function MobileQuoteStep6Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-      <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center overflow-hidden">
+      <div className="w-full max-w-[500px] h-screen bg-white shadow-xl flex flex-col">
         {/* 헤더 */}
         <header className="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
           <button 
@@ -162,7 +169,7 @@ export default function MobileQuoteStep6Page() {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <main className="flex-grow flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0">
           <div className="p-6 flex-shrink-0">
             <h2 className="text-2xl font-bold text-gray-800">
               구매를 원하는<br />휴대폰을 선택해주세요!
@@ -245,7 +252,7 @@ export default function MobileQuoteStep6Page() {
           </div>
 
           {/* 디바이스 목록 */}
-          <div className="flex-grow overflow-y-auto px-6 space-y-4 pb-6">
+          <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
             {loading ? (
               <div className="text-center py-10">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -290,11 +297,32 @@ export default function MobileQuoteStep6Page() {
         </main>
       </div>
 
-      {/* 디바이스 상세 모달 */}
+      {/* Bottom Sheet 모달 - step1과 동일한 스타일 */}
       {showModal && selectedDevice && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end justify-center">
-          <div className="w-full max-w-[500px] bg-white rounded-t-3xl transform transition-transform duration-300">
-            <div className="p-6 overflow-y-auto max-h-[80vh]">
+        <div className="fixed inset-0 z-50 flex justify-center items-end">
+          {/* 배경 오버레이 - 어둡게 처리 */}
+          <div 
+            className={`absolute inset-0 bg-black transition-opacity duration-300 ease-out ${
+              showModal ? 'opacity-60' : 'opacity-0'
+            }`}
+            onClick={handleCloseModal}
+          />
+          
+          {/* 모달 컨텐츠 */}
+          <div 
+            className={`relative w-full max-w-[500px] bg-white rounded-t-2xl p-6 transform transition-all duration-300 ease-out ${
+              showModal 
+                ? 'translate-y-0 opacity-100' 
+                : 'translate-y-full opacity-0'
+            }`}
+            style={{
+              animation: showModal ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
+            }}
+          >
+            {/* 상단 핸들바 */}
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
+            
+            <div className="overflow-y-auto max-h-[75vh]">
               {/* 디바이스 정보 */}
               <div className="bg-white rounded-xl p-4 flex space-x-4">
                 <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -337,10 +365,10 @@ export default function MobileQuoteStep6Page() {
               </div>
 
               {/* 색상 선택 */}
-              <div className="mt-6">
+              <div className="mt-6 mb-4">
                 <h4 className="font-bold">선택한 모델의 색상을 선택해주세요!</h4>
                 <div className="mt-3 flex items-center justify-between">
-                  <div className="flex space-x-3">
+                  <div className="flex space-x-3 py-2">
                     {selectedDevice.colors.map((color) => (
                       <div
                         key={color}
@@ -356,7 +384,7 @@ export default function MobileQuoteStep6Page() {
                       />
                     ))}
                   </div>
-                  <label className="flex items-center text-sm cursor-pointer">
+                  <label className="flex items-center text-sm cursor-pointer flex-shrink-0 ml-2">
                     <input 
                       type="checkbox" 
                       checked={colorAgnostic}
@@ -373,17 +401,17 @@ export default function MobileQuoteStep6Page() {
             </div>
 
             {/* 하단 버튼 */}
-            <footer className="p-4 bg-white border-t border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div className="mt-8 grid grid-cols-2 gap-4">
               <button
-                onClick={() => setShowModal(false)}
-                className="w-1/3 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300"
+                onClick={handleCloseModal}
+                className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
               >
                 돌아가기
               </button>
               <button
                 onClick={handleConfirmSelection}
                 disabled={!selectedColor && !colorAgnostic}
-                className={`w-2/3 ml-3 py-3 rounded-lg font-bold transition ${
+                className={`w-full py-3 rounded-lg font-bold transition-colors ${
                   selectedColor || colorAgnostic
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
@@ -391,10 +419,35 @@ export default function MobileQuoteStep6Page() {
               >
                 모델 선택하기
               </button>
-            </footer>
+            </div>
           </div>
         </div>
       )}
+
+      {/* CSS 애니메이션 정의 */}
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideDown {
+          from {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }

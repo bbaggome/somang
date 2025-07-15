@@ -57,8 +57,8 @@ export default function MobileQuoteStep5Page() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-      <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center overflow-hidden">
+      <div className="w-full max-w-[500px] h-screen bg-white shadow-xl flex flex-col">
         {/* 헤더 */}
         <header className="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
           <button 
@@ -79,58 +79,60 @@ export default function MobileQuoteStep5Page() {
         </div>
 
         {/* 메인 컨텐츠 */}
-        <main className="flex-grow overflow-y-auto p-6 pb-24">
-          <section>
-            <h2 className="text-2xl font-bold text-gray-800">
-              한달 데이터 사용량은<br />어떻게 되시나요?
-            </h2>
-            <p className="mt-2 text-gray-500">의무요금제 사용 후, 최적의 요금제를 추천해 드려요</p>
-            
-            <div className="mt-8 space-y-4">
-              {dataOptions.map((option) => (
-                <label 
-                  key={option.value}
-                  className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    dataUsage === option.value 
-                      ? 'border-blue-600 bg-blue-50' 
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 mt-1 flex-shrink-0 ${
-                    dataUsage === option.value 
-                      ? 'bg-blue-600 border-blue-600' 
-                      : 'border-gray-300'
-                  }`}>
-                    {dataUsage === option.value && (
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className={`font-bold text-gray-800 ${dataUsage === option.value ? 'text-blue-600' : ''}`}>
-                      {option.title}
-                    </h4>
-                    <p className="text-sm text-gray-500">
-                      {option.description}
-                    </p>
-                  </div>
-                  <input 
-                    type="radio" 
-                    name="dataUsage" 
-                    value={option.value} 
-                    checked={dataUsage === option.value}
-                    onChange={(e) => setDataUsage(e.target.value)}
-                    className="hidden"
-                  />
-                </label>
-              ))}
-            </div>
-          </section>
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800">
+                한달 데이터 사용량은<br />어떻게 되시나요?
+              </h2>
+              <p className="mt-2 text-gray-500">의무요금제 사용 후, 최적의 요금제를 추천해 드려요</p>
+              
+              <div className="mt-8 space-y-4 pb-6">
+                {dataOptions.map((option) => (
+                  <label 
+                    key={option.value}
+                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      dataUsage === option.value 
+                        ? 'border-blue-600 bg-blue-50' 
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 mt-1 flex-shrink-0 ${
+                      dataUsage === option.value 
+                        ? 'bg-blue-600 border-blue-600' 
+                        : 'border-gray-300'
+                    }`}>
+                      {dataUsage === option.value && (
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold text-gray-800 ${dataUsage === option.value ? 'text-blue-600' : ''}`}>
+                        {option.title}
+                      </h4>
+                      <p className="text-sm text-gray-500">
+                        {option.description}
+                      </p>
+                    </div>
+                    <input 
+                      type="radio" 
+                      name="dataUsage" 
+                      value={option.value} 
+                      checked={dataUsage === option.value}
+                      onChange={(e) => setDataUsage(e.target.value)}
+                      className="hidden"
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+          </div>
         </main>
 
-        {/* 하단 버튼 */}
-        <footer className="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+        {/* 하단 고정 버튼 */}
+        <footer className="flex-shrink-0 p-4 bg-white border-t border-gray-100 shadow-lg flex items-center justify-between">
           <button
             onClick={handleBack}
             className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition"
@@ -143,9 +145,9 @@ export default function MobileQuoteStep5Page() {
           <button
             onClick={handleNext}
             disabled={!dataUsage}
-            className={`flex-grow ml-4 py-4 rounded-xl font-bold text-lg transition ${
+            className={`flex-grow ml-4 py-4 rounded-xl font-bold text-lg transition-all duration-200 active:scale-[0.98] ${
               dataUsage 
-                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
