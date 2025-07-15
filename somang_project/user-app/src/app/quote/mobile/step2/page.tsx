@@ -1,21 +1,31 @@
 // /src/app/quote/mobile/step2/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 
 export default function MobileQuoteStep2Page() {
   const router = useRouter();
-  const [purchaseTarget, setPurchaseTarget] = useState<string>('self');
-  const [age, setAge] = useState<string>('');
+  const { quoteData, updateQuoteData } = useQuote();
+  const [purchaseTarget, setPurchaseTarget] = useState<string>(quoteData.purchaseTarget || '');
+  const [age, setAge] = useState<string>(quoteData.age || '');
+
+  // 컴포넌트 마운트 시 저장된 데이터로 초기화
+  useEffect(() => {
+    if (quoteData.purchaseTarget) setPurchaseTarget(quoteData.purchaseTarget);
+    if (quoteData.age) setAge(quoteData.age);
+  }, [quoteData]);
 
   const handleNext = () => {
     if (purchaseTarget && age) {
-      const params = new URLSearchParams({
-        purchaseTarget,
-        age
+      // Context에 데이터 저장
+      updateQuoteData({ 
+        purchaseTarget: purchaseTarget as any, 
+        age: age as any 
       });
-      router.push(`/quote/mobile/step3?${params.toString()}`);
+      // URL 파라미터 없이 이동
+      router.push('/quote/mobile/step3');
     }
   };
 
@@ -36,9 +46,9 @@ export default function MobileQuoteStep2Page() {
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        {/* 진행 상태 바 - 1/5 (12.5%) */}
+        {/* 진행 상태 바 - 1/8 (12.5%) */}
         <div className="w-full bg-gray-200 h-1 flex-shrink-0">
-          <div className="bg-blue-600 h-1 transition-all duration-500" style={{ width: '12.5%' }}></div>
+          <div className="bg-blue-600 h-1 transition-all duration-500 w-[12.5%]" />
         </div>
 
         {/* 메인 컨텐츠 */}

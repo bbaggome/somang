@@ -2,18 +2,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 
 export default function MobileQuoteStep3Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [carrier, setCarrier] = useState<string>('');
+  const { quoteData, updateQuoteData } = useQuote();
+  const [carrier, setCarrier] = useState<string>(quoteData.currentCarrier || '');
+
+  // 컴포넌트 마운트 시 저장된 데이터로 초기화
+  useEffect(() => {
+    if (quoteData.currentCarrier) setCarrier(quoteData.currentCarrier);
+  }, [quoteData]);
 
   const handleNext = () => {
     if (carrier) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('carrier', carrier);
-      router.push(`/quote/mobile/step4?${params.toString()}`);
+      // Context에 데이터 저장
+      updateQuoteData({ currentCarrier: carrier as any });
+      // URL 파라미터 없이 이동
+      router.push('/quote/mobile/step4');
     }
   };
 
@@ -38,9 +45,9 @@ export default function MobileQuoteStep3Page() {
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        {/* 진행 상태 바 - 2/5 (25%) */}
+        {/* 진행 상태 바 - 2/8 (25%) */}
         <div className="w-full bg-gray-200 h-1 flex-shrink-0">
-          <div className="bg-blue-600 h-1 transition-all duration-500" style={{ width: '25%' }}></div>
+          <div className="bg-blue-600 h-1 transition-all duration-500 w-1/4" />
         </div>
 
         {/* 메인 컨텐츠 */}

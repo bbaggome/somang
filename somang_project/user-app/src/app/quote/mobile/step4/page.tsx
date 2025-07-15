@@ -2,23 +2,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 
 export default function MobileQuoteStep4Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [changeType, setChangeType] = useState<string>('');
-  const [newCarrier, setNewCarrier] = useState<string>('');
-  const currentCarrier = searchParams.get('carrier') || '';
+  const { quoteData, updateQuoteData } = useQuote();
+  const [changeType, setChangeType] = useState<string>(quoteData.changeType || '');
+  const [newCarrier, setNewCarrier] = useState<string>(quoteData.newCarrier || '');
+  const currentCarrier = quoteData.currentCarrier || '';
+
+  // 컴포넌트 마운트 시 저장된 데이터로 초기화
+  useEffect(() => {
+    if (quoteData.changeType) setChangeType(quoteData.changeType);
+    if (quoteData.newCarrier) setNewCarrier(quoteData.newCarrier);
+  }, [quoteData]);
 
   const handleNext = () => {
     if (changeType && (changeType === 'device_only' || newCarrier)) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('changeType', changeType);
-      if (changeType !== 'device_only') {
-        params.set('newCarrier', newCarrier);
-      }
-      router.push(`/quote/mobile/step5?${params.toString()}`);
+      // Context에 데이터 저장
+      updateQuoteData({ 
+        changeType: changeType as any,
+        newCarrier: changeType !== 'device_only' ? newCarrier as any : undefined
+      });
+      // URL 파라미터 없이 이동
+      router.push('/quote/mobile/step5');
     }
   };
 
@@ -43,7 +51,7 @@ export default function MobileQuoteStep4Page() {
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        {/* 진행 상태 바 - 3/5 (37.5%) */}
+        {/* 진행 상태 바 - 3/8 (37.5%) */}
         <div className="w-full bg-gray-200 h-1 flex-shrink-0">
           <div className="bg-blue-600 h-1 transition-all duration-500 w-[37.5%]" />
         </div>

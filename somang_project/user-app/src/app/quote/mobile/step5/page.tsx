@@ -1,19 +1,26 @@
 // /src/app/quote/mobile/step5/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 
 export default function MobileQuoteStep5Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [dataUsage, setDataUsage] = useState<string>('');
+  const { quoteData, updateQuoteData } = useQuote();
+  const [dataUsage, setDataUsage] = useState<string>(quoteData.dataUsage || '');
+
+  // 컴포넌트 마운트 시 저장된 데이터로 초기화
+  useEffect(() => {
+    if (quoteData.dataUsage) setDataUsage(quoteData.dataUsage);
+  }, [quoteData]);
 
   const handleNext = () => {
     if (dataUsage) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('dataUsage', dataUsage);
-      router.push(`/quote/mobile/step6?${params.toString()}`);
+      // Context에 데이터 저장
+      updateQuoteData({ dataUsage: dataUsage as any });
+      // URL 파라미터 없이 이동
+      router.push('/quote/mobile/step6');
     }
   };
 
@@ -66,7 +73,7 @@ export default function MobileQuoteStep5Page() {
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        {/* 진행 상태 바 - 4/5 (50%) */}
+        {/* 진행 상태 바 - 4/8 (50%) */}
         <div className="w-full bg-gray-200 h-1 flex-shrink-0">
           <div className="bg-blue-600 h-1 transition-all duration-500 w-1/2" />
         </div>

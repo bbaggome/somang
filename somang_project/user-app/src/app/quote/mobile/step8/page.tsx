@@ -1,36 +1,76 @@
 // /src/app/quote/mobile/step8/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import { useQuote } from '@/context/QuoteContext';
 import { supabase } from '@/lib/supabase/client';
 import type { QuoteRequestDetails } from '@/types/quote';
 
 export default function MobileQuoteStep8Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { quoteData, resetQuoteData } = useQuote();
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState<any>(null);
+  const hasCheckedData = useRef(false); // 데이터 검증을 한 번만 실행하기 위한 ref
 
-  // URL 파라미터에서 데이터 추출
+  // Context에서 데이터 가져오기
   const requestData: QuoteRequestDetails = {
-    purchaseTarget: searchParams.get('purchaseTarget') as 'self' | 'other' || 'self',
-    age: searchParams.get('age') as any || 'general',
-    currentCarrier: searchParams.get('carrier') as any || 'skt',
-    changeType: searchParams.get('changeType') as any || 'device_only',
-    newCarrier: searchParams.get('newCarrier') as any,
-    dataUsage: searchParams.get('dataUsage') as any || 'unlimited',
-    deviceId: searchParams.get('deviceId') || '',
-    color: searchParams.get('color') || 'any',
-    locations: searchParams.get('locations')?.split(',') || []
+    purchaseTarget: quoteData.purchaseTarget || 'self',
+    age: quoteData.age || 'general',
+    currentCarrier: quoteData.currentCarrier || 'skt',
+    changeType: quoteData.changeType || 'device_only',
+    newCarrier: quoteData.newCarrier,
+    dataUsage: quoteData.dataUsage || 'unlimited',
+    deviceId: quoteData.deviceId || '',
+    color: quoteData.color || 'any',
+    locations: quoteData.locations || []
   };
+
+  // 데이터 유효성 검사 (한 번만 실행)
+  useEffect(() => {
+    if (hasCheckedData.current) return; // 이미 검사했으면 skip
+    
+    hasCheckedData.current = true;
+    
+    console.log('Quote data validation:', quoteData);
+    console.log('Request data:', requestData);
+    
+    // 필수 데이터 검증
+    const isDataValid = 
+      requestData.purchaseTarget && 
+      requestData.age &&
+      requestData.currentCarrier &&
+      requestData.changeType &&
+      requestData.dataUsage &&
+      requestData.deviceId && 
+      requestData.color &&
+      requestData.locations.length > 0;
+
+    if (!isDataValid) {
+      console.log('데이터 유효성 검사 실패:', {
+        purchaseTarget: !!requestData.purchaseTarget,
+        age: !!requestData.age,
+        currentCarrier: !!requestData.currentCarrier,
+        changeType: !!requestData.changeType,
+        dataUsage: !!requestData.dataUsage,
+        deviceId: !!requestData.deviceId,
+        color: !!requestData.color,
+        locations: requestData.locations.length
+      });
+      
+      alert('견적 정보가 불완전합니다. 처음부터 다시 시작해주세요.');
+      resetQuoteData();
+      router.replace('/quote/mobile/step1');
+    }
+  }, []); // 빈 배열로 한 번만 실행
 
   // 디바이스 정보 로드
   useEffect(() => {
-    if (requestData.deviceId) {
+    if (requestData.deviceId && requestData.deviceId !== '') {
       loadDeviceInfo(requestData.deviceId);
     }
   }, [requestData.deviceId]);
@@ -56,23 +96,54 @@ export default function MobileQuoteStep8Page() {
       return;
     }
 
+    console.log('견적 요청 시작:', {
+      user_id: user.id,
+      user_email: user.email,
+      requestData
+    });
+
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('quote_requests')
         .insert({
           user_id: user.id,
           product_type: 'mobile_phone',
           request_details: requestData,
           status: 'open'
+        })
+        .select(); // 삽입된 데이터를 반환받기 위해 추가
+
+      if (error) {
+        console.error('Supabase 에러 상세:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
         });
+        throw error;
+      }
 
-      if (error) throw error;
+      console.log('견적 요청 성공:', data);
 
+      // 성공 시 Context 데이터 초기화
+      resetQuoteData();
       setShowConfirmModal(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('견적 요청 실패:', error);
-      alert('견적 요청 중 오류가 발생했습니다.');
+      
+      // 에러 타입별로 다른 메시지 표시
+      let errorMessage = '견적 요청 중 오류가 발생했습니다.';
+      
+      if (error.code === '42501') {
+        errorMessage = '권한이 없습니다. 로그인 상태를 확인해주세요.';
+      } else if (error.code === '23503') {
+        errorMessage = '사용자 정보를 찾을 수 없습니다.';
+      } else if (error.message) {
+        errorMessage = `오류: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -117,6 +188,18 @@ export default function MobileQuoteStep8Page() {
     return changeMap[changeType] || changeType;
   };
 
+  // 데이터 검증 중이거나 리다이렉트 중일 때는 로딩 표시
+  if (!hasCheckedData.current) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">데이터를 확인하고 있습니다...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
       <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
@@ -133,6 +216,11 @@ export default function MobileQuoteStep8Page() {
           </button>
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
+
+        {/* 진행 상태 바 - 8/8 (100%) */}
+        <div className="w-full bg-gray-200 h-1 flex-shrink-0">
+          <div className="bg-blue-600 h-1 w-full transition-all duration-500" />
+        </div>
 
         {/* 메인 컨텐츠 */}
         <main className="flex-grow overflow-y-auto p-6 pb-24">

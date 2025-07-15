@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 import { supabase } from '@/lib/supabase/client';
 
 interface Device {
@@ -21,7 +22,7 @@ interface Device {
 
 export default function MobileQuoteStep6Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { quoteData, updateQuoteData } = useQuote();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,27 +112,31 @@ export default function MobileQuoteStep6Page() {
   const handleConfirmSelection = () => {
     if (!selectedDevice || (!selectedColor && !colorAgnostic)) return;
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('deviceId', selectedDevice.id);
-    params.set('color', colorAgnostic ? 'any' : selectedColor);
-    router.push(`/quote/mobile/step7?${params.toString()}`);
+    // Context에 데이터 저장
+    updateQuoteData({
+      deviceId: selectedDevice.id,
+      color: colorAgnostic ? 'any' : selectedColor
+    });
+    
+    // URL 파라미터 없이 이동
+    router.push('/quote/mobile/step7');
   };
 
   const getColorClasses = (color: string) => {
     // 색상 이름을 Tailwind 클래스로 매핑
     const colorMap: { [key: string]: string } = {
-      'Titanium Black': 'bg-gray-900',
-      'Titanium Gray': 'bg-gray-500',
-      'Titanium Violet': 'bg-purple-600',
-      'Titanium Yellow': 'bg-yellow-400',
-      'Natural Titanium': 'bg-gray-300',
-      'Black': 'bg-black',
+      'Titanium Black': 'bg-gray-900 border-gray-700',
+      'Titanium Gray': 'bg-gray-500 border-gray-400',
+      'Titanium Violet': 'bg-purple-600 border-purple-500',
+      'Titanium Yellow': 'bg-yellow-400 border-yellow-300',
+      'Natural Titanium': 'bg-gray-300 border-gray-200',
+      'Black': 'bg-black border-gray-800',
       'White': 'bg-white border-gray-300',
-      'Blue': 'bg-blue-500',
-      'Pink': 'bg-pink-500',
-      'Green': 'bg-green-500',
+      'Blue': 'bg-blue-500 border-blue-400',
+      'Pink': 'bg-pink-500 border-pink-400',
+      'Green': 'bg-green-500 border-green-400',
     };
-    return colorMap[color] || 'bg-gray-300';
+    return colorMap[color] || 'bg-gray-300 border-gray-200';
   };
 
   return (
@@ -151,11 +156,9 @@ export default function MobileQuoteStep6Page() {
           <h1 className="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
         </header>
 
-        {/* 진행 상태 바 - 5/5 (62.5%) */}
+        {/* 진행 상태 바 - 5/8 (62.5%) */}
         <div className="w-full bg-gray-200 h-1 flex-shrink-0">
-          <div 
-            className="bg-blue-600 h-1 transition-all duration-500 w-5/8"            
-          />
+          <div className="bg-blue-600 h-1 transition-all duration-500 w-[62.5%]" />
         </div>
 
         {/* 메인 컨텐츠 */}

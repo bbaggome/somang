@@ -2,45 +2,40 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useQuote } from '@/context/QuoteContext';
 
 export default function MobileQuoteStep7Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const { quoteData, updateQuoteData } = useQuote();
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(quoteData.locations || []);
 
+  // 컴포넌트 마운트 시 저장된 데이터로 초기화
   useEffect(() => {
-    // URL 쿼리에서 'locations' 파라미터를 읽어와 상태를 초기화합니다.
-    const locationsParam = searchParams.get('locations');
-    if (locationsParam) {
-      setSelectedLocations(locationsParam.split(',').filter(Boolean)); // 빈 문자열 제거
+    if (quoteData.locations && quoteData.locations.length > 0) {
+      setSelectedLocations(quoteData.locations);
     }
-  }, [searchParams]);
+  }, [quoteData]);
 
   const handleAddLocationClick = () => {
-    // locations 파라미터를 유지하면서 검색 페이지로 이동합니다.
-    router.push(`/quote/mobile/location-search?${searchParams.toString()}`);
+    // Context 데이터를 유지하면서 검색 페이지로 이동
+    router.push('/quote/mobile/location-search');
   };
 
   const handleRemoveLocation = (locationToRemove: string) => {
     const newLocations = selectedLocations.filter(loc => loc !== locationToRemove);
     setSelectedLocations(newLocations);
-
-    // URL 파라미터를 업데이트합니다.
-    const params = new URLSearchParams(searchParams.toString());
-    if (newLocations.length > 0) {
-      params.set('locations', newLocations.join(','));
-    } else {
-      params.delete('locations');
-    }
-    // 페이지를 리로드하지 않고 URL만 변경합니다.
-    router.replace(`/quote/mobile/step7?${params.toString()}`);
+    
+    // Context에 즉시 업데이트
+    updateQuoteData({ locations: newLocations });
   };
 
   const handleNext = () => {
     if (selectedLocations.length > 0) {
-      // 이미 URL에 locations가 있으므로 그대로 다음 단계로 넘어갑니다.
-      router.push(`/quote/mobile/step8?${searchParams.toString()}`);
+      // Context에 데이터 저장
+      updateQuoteData({ locations: selectedLocations });
+      // URL 파라미터 없이 이동
+      router.push('/quote/mobile/step8');
     }
   };
   
@@ -104,7 +99,9 @@ export default function MobileQuoteStep7Page() {
                   onClick={handleAddLocationClick}
                   className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                   동네 추가하기
                 </button>
               )}
