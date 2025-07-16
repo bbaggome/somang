@@ -1,40 +1,45 @@
+version: '3.8'  # 최신 버전으로 업데이트
 services:
-  # --- Development Services (dev profile) ---
   user-app-dev:
     container_name: user-app-dev
     build:
       context: ./user-app
       dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
+      - "50331:50331"  # 컨테이너 내부 포트 3000을 호스트 50331에 매핑
     volumes:
       - ./user-app:/app
       - /app/node_modules
       - /app/.next
-    # Polling 환경 변수 추가
     environment:
       - WATCHPACK_POLLING=true
-    #command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - user-app-dev
 
+  # 나머지 서비스는 동일
   biz-app-dev:
     container_name: biz-app-dev
     build:
       context: ./biz-app
       dockerfile: Dockerfile.dev
     ports:
-      - "3100:3000"
+      - "50332:50332"  # 동일하게 3000으로 수정
     volumes:
       - ./biz-app:/app
       - /app/node_modules
       - /app/.next
-    # Polling 환경 변수 추가
     environment:
       - WATCHPACK_POLLING=true
-    #command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - biz-app-dev
 
   admin-app-dev:
     container_name: admin-app-dev
@@ -42,19 +47,21 @@ services:
       context: ./admin-app
       dockerfile: Dockerfile.dev
     ports:
-      - "3200:3000"
+      - "50333:50333"  # 동일하게 3000으로 수정
     volumes:
       - ./admin-app:/app
       - /app/node_modules
       - /app/.next
-    # Polling 환경 변수 추가
     environment:
       - WATCHPACK_POLLING=true
-    #command: sh -c "pnpm install && pnpm run dev"    
     profiles:
       - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - admin-app-dev
 
-  # --- Production Services (prod profile) ---
+  # 운영 환경 서비스는 기존 설정 유지
   user-app-prod:
     container_name: user-app-prod
     build:
@@ -64,6 +71,8 @@ services:
       - "8000:3000"
     profiles:
       - "prod"
+    networks:
+      - somang-network
 
   biz-app-prod:
     container_name: biz-app-prod
@@ -74,6 +83,8 @@ services:
       - "8100:3000"
     profiles:
       - "prod"
+    networks:
+      - somang-network
 
   admin-app-prod:
     container_name: admin-app-prod
@@ -84,3 +95,10 @@ services:
       - "8200:3000"
     profiles:
       - "prod"
+    networks:
+      - somang-network
+
+networks:
+  somang-network:
+    driver: bridge
+    name: somang-network
