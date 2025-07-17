@@ -107,7 +107,9 @@ export default function DashboardPage() {
 
       console.log('권한 확인 완료 - owner 권한');
       setUserProfile(profile);
-      await loadQuoteRequests();
+      
+      // 프로필 설정 후 견적 요청 로드
+      await loadQuoteRequestsWithProfile(profile);
     } catch (error) {
       console.error('사용자 확인 오류:', error);
       setError('인증 오류가 발생했습니다.');
@@ -116,46 +118,89 @@ export default function DashboardPage() {
     }
   };
 
-  const loadQuoteRequests = async () => {
+  // 프로필 파라미터를 받는 버전
+  const loadQuoteRequestsWithProfile = async (profile: UserProfile) => {
     try {
-      console.log('견적 요청 로드 시작');
+      console.log('견적 요청 로드 시작 (프로필 포함)');
       
-      const { data, error } = await supabase
+      // 전달받은 profile로 권한 확인
+      if (!profile || profile.role !== 'owner') {
+        console.log('권한 없음 - 견적 요청 로드 중단');
+        setError('견적 요청을 볼 권한이 없습니다.');
+        return;
+      }
+      
+      console.log('프로필 권한 확인됨:', profile.role);
+      
+      // 먼저 quote_requests만 로드
+      const { data: quotesData, error: quotesError } = await supabase
         .from('quote_requests')
-        .select(`
-          id,
-          created_at,
-          updated_at,
-          status,
-          product_type,
-          request_details,
-          user_profiles!inner (
-            name,
-            phone_number
-          )
-        `)
+        .select('*')
         .eq('product_type', 'mobile_phone')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('견적 요청 로드 오류:', error);
-        throw error;
+      if (quotesError) {
+        console.error('견적 요청 로드 오류:', quotesError);
+        
+        // 구체적인 오류 메시지 제공
+        if (quotesError.code === '42501') {
+          setError('데이터베이스 접근 권한이 없습니다. 관리자에게 문의하세요.');
+        } else if (quotesError.code === 'PGRST301') {
+          setError('RLS 정책으로 인해 데이터에 접근할 수 없습니다.');
+        } else {
+          setError(`견적 요청 로드 실패: ${quotesError.message}`);
+        }
+        return;
       }
       
-      console.log('견적 요청 로드 완료:', data?.length || 0, '건');
+      console.log('견적 요청 기본 데이터 로드 완료:', quotesData?.length || 0, '건');
       
-      // 데이터 타입 변환: user_profiles 배열을 단일 객체로 변환
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        user_profiles: Array.isArray(item.user_profiles) 
-          ? item.user_profiles[0] || null 
-          : item.user_profiles
-      })) as QuoteRequest[];
+      if (!quotesData || quotesData.length === 0) {
+        setQuoteRequests([]);
+        return;
+      }
+      
+      // 사용자 프로필 정보 별도 로드 (profiles 테이블로 수정)
+      const userIds = [...new Set(quotesData.map(quote => quote.user_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, phone_number')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.warn('프로필 로드 오류:', profilesError);
+        // 프로필 로드 실패해도 견적 요청은 표시 (프로필 없이)
+      }
+      
+      console.log('프로필 데이터 로드 완료:', profilesData?.length || 0, '건');
+      
+      // 데이터 결합
+      const transformedData = quotesData.map(quote => {
+        const userProfile = profilesData?.find(profile => profile.id === quote.user_id);
+        return {
+          ...quote,
+          user_profiles: userProfile ? {
+            name: userProfile.name,
+            phone_number: userProfile.phone_number
+          } : { name: '고객', phone_number: null }
+        };
+      }) as QuoteRequest[];
       
       setQuoteRequests(transformedData);
-    } catch (error) {
-      console.error('견적 요청 로드 오류:', error);
-      setError('견적 요청을 불러오는데 실패했습니다.');
+      console.log('최종 변환된 데이터:', transformedData.length, '건');
+      
+    } catch (error: any) {
+      console.error('견적 요청 로드 중 예외 발생:', error);
+      setError(`견적 요청 로드 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+    }
+  };
+
+  // 기존 함수는 상태 기반으로 작동
+  const loadQuoteRequests = async () => {
+    if (userProfile) {
+      await loadQuoteRequestsWithProfile(userProfile);
+    } else {
+      console.log('userProfile이 없어서 견적 요청 로드를 건너뜁니다.');
     }
   };
 
@@ -306,8 +351,23 @@ export default function DashboardPage() {
       {/* 메인 컨텐츠 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">견적 요청 관리</h2>
-          <p className="text-gray-600">고객들의 휴대폰 견적 요청을 확인하고 응답하세요.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">견적 요청 관리</h2>
+              <p className="text-gray-600">고객들의 휴대폰 견적 요청을 확인하고 응답하세요.</p>
+            </div>
+            <div className="mt-4 sm:mt-0">
+              <button
+                onClick={() => router.push('/quote/manage')}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                보낸 견적 관리
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 통계 카드 */}
@@ -435,7 +495,10 @@ export default function DashboardPage() {
                     </div>
                     
                     <div className="mt-4 flex justify-end space-x-2">
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                      <button 
+                        onClick={() => router.push(`/quote/send/${request.id}`)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
                         견적 보내기
                       </button>
                       <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
