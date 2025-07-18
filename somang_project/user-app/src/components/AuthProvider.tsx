@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { generateRandomNickname } from '@/lib/utils/nickname';
@@ -13,9 +13,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // 중복 요청 방지를 위한 ref들
+  const fetchingProfile = useRef(false);
+  const mounted = useRef(true);
+  const authStateChangeCount = useRef(0);
 
   // 프로필 생성 함수 (랜덤 닉네임 포함)
-  const createProfile = async (userId: string, userEmail: string) => {
+  const createProfile = useCallback(async (userId: string, userEmail: string) => {
     try {
       const nickname = generateRandomNickname();
       
@@ -36,11 +41,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('프로필 생성 실패:', error);
       return null;
     }
-  };
+  }, []);
 
   // 프로필 조회 함수 (권한 검증 추가)
-  const fetchProfile = async (userId: string, userEmail: string) => {
+  const fetchProfile = useCallback(async (userId: string, userEmail: string) => {
+    // 이미 프로필을 가져오는 중이면 대기
+    if (fetchingProfile.current) {
+      return null;
+    }
+
     try {
+      fetchingProfile.current = true;
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -69,11 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('프로필 조회 실패:', error);
       return null;
+    } finally {
+      fetchingProfile.current = false;
     }
-  };
+  }, [createProfile]);
 
   // 로그아웃 함수
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       console.log('AuthProvider 로그아웃 시작');
       
@@ -98,9 +112,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setProfile(null);
     }
-  };
+  }, []);
+
+  // 세션 처리 함수
+  const handleSession = useCallback(async (session: any, isInitial = false) => {
+    if (!mounted.current) return;
+
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (currentUser) {
+      // 프로필 정보 로드
+      const profileData = await fetchProfile(currentUser.id, currentUser.email || '');
+      if (mounted.current) {
+        setProfile(profileData);
+      }
+    } else {
+      setProfile(null);
+    }
+
+    // 로딩 상태 해제
+    if (mounted.current) {
+      if (isInitial) {
+        setIsInitializing(false);
+      }
+      setIsLoading(false);
+    }
+  }, [fetchProfile]);
 
   useEffect(() => {
+    mounted.current = true;
+    
     // 초기 세션 확인
     const getInitialSession = async () => {
       try {
@@ -111,24 +153,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('user-app 초기 세션:', session?.user?.email || 'null');
         
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id, session.user.email || '');
-          setProfile(profileData);
-        } else {
-          setProfile(null);
-        }
+        await handleSession(session, true);
         
       } catch (error) {
         console.error('초기 세션 확인 실패:', error);
-        setUser(null);
-        setProfile(null);
-      } finally {
-        // 초기화 완료
-        setIsLoading(false);
-        setIsInitializing(false);
-        console.log('user-app 초기 세션 확인 완료');
+        if (mounted.current) {
+          setUser(null);
+          setProfile(null);
+          setIsLoading(false);
+          setIsInitializing(false);
+        }
       }
     };
 
@@ -138,29 +172,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('user-app Auth state changed:', event, session?.user?.email || 'null');
+      // 이벤트 카운터 증가
+      authStateChangeCount.current += 1;
+      const currentCount = authStateChangeCount.current;
       
-      // 초기화가 완료된 후에만 상태 변경 처리
-      if (!isInitializing) {
-        setIsLoading(true);
-      }
+      console.log(`user-app Auth state changed (${currentCount}):`, event, session?.user?.email || 'null');
       
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id, session.user.email || '');
-        setProfile(profileData);
-      } else {
-        setProfile(null);
-      }
-      
-      // 초기화가 완료된 후에만 로딩 상태 해제
-      if (!isInitializing) {
-        setIsLoading(false);
+      // 초기화 완료 후에만 상태 변경 처리
+      if (!isInitializing && mounted.current) {
+        // 짧은 디바운스를 적용하여 중복 호출 방지
+        setTimeout(async () => {
+          // 최신 이벤트인지 확인
+          if (currentCount === authStateChangeCount.current && mounted.current) {
+            setIsLoading(true);
+            await handleSession(session, false);
+          }
+        }, 100);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      mounted.current = false;
+      subscription.unsubscribe();
+    };
   }, []); // 빈 의존성 배열로 마운트시에만 실행
 
   const value = {

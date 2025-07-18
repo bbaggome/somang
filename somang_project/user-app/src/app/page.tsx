@@ -1,26 +1,35 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function HomePage() {
-  const { user, profile, isLoading, isInitializing } = useAuth();
+  const { user, profile, isLoading: authLoading, isInitializing } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const mounted = useRef(true);
 
   // 인증되지 않은 사용자는 로그인 페이지로 리디렉션
   useEffect(() => {
-    if (!isInitializing && !isLoading && !user) {
+    mounted.current = true;
+    
+    // 초기화 완료 + 인증 로딩 완료 + 사용자 없음 조건에서만 리디렉션
+    if (!isInitializing && !authLoading && !user) {
+      console.log('인증되지 않은 사용자, 로그인 페이지로 이동');
       router.replace('/login');
     }
-  }, [user, isLoading, isInitializing, router]);
+
+    return () => {
+      mounted.current = false;
+    };
+  }, [user, authLoading, isInitializing, router]);
 
   // useCallback으로 함수 최적화 (탭 전환 후 재연결 문제 해결)
   const handleLogout = useCallback(async () => {
-    if (isLoggingOut) return;
+    if (isLoggingOut || !mounted.current) return;
     
     try {
       setIsLoggingOut(true);
@@ -33,7 +42,9 @@ export default function HomePage() {
       // 짧은 타임아웃으로 빠른 강제 이동
       const timeoutId = setTimeout(() => {
         console.log('로그아웃 타임아웃 - 강제 이동');
-        window.location.href = '/login';
+        if (mounted.current) {
+          window.location.href = '/login';
+        }
       }, 1000);
       
       try {
@@ -47,48 +58,69 @@ export default function HomePage() {
         
         clearTimeout(timeoutId);
         console.log('로그아웃 완료');
-        window.location.href = '/login';
+        if (mounted.current) {
+          window.location.href = '/login';
+        }
       } catch (error) {
         clearTimeout(timeoutId);
         console.log('Supabase 로그아웃 실패, 강제 이동:', error);
-        window.location.href = '/login';
+        if (mounted.current) {
+          window.location.href = '/login';
+        }
       }
       
     } catch (error) {
       console.error('로그아웃 처리 실패:', error);
-      window.location.href = '/login';
+      if (mounted.current) {
+        window.location.href = '/login';
+      }
     }
   }, [isLoggingOut]);
 
   // 초기화 중인 경우 - 아무것도 렌더링하지 않음
   if (isInitializing) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">초기화 중...</p>
+        </div>
+      </div>
+    );
   }
 
-  // 인증되지 않은 경우
+  // 인증 로딩 중인 경우
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로그인 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 인증되지 않은 경우 - 리디렉션 진행 중
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로그인 페이지로 이동 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
       <LoadingOverlay 
-        isVisible={isLoading || isLoggingOut} 
-        message={isLoggingOut ? "로그아웃 중..." : "로딩 중..."}
+        isVisible={isLoggingOut} 
+        message="로그아웃 중..."
       />
       
       <div className="w-full max-w-[500px] min-h-screen bg-white shadow-xl overflow-hidden flex flex-col">
-        {/* 헤더 */}
-        {/* <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-center">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <span className="text-2xl font-black text-blue-600">T</span>
-            </div>
-            <h1 className="text-2xl font-black text-white">T-BRIDGE</h1>
-            <p className="text-blue-100 text-sm mt-2">가장 투명한 통신 견적 비교</p>
-          </div>
-        </div> */}
-
         {/* 컨텐츠 - 상단 부분 */}
         <div className="p-8 flex-1">
           <div className="text-center mb-8">
@@ -148,6 +180,20 @@ export default function HomePage() {
               </div>
             </a>
             
+            {/* 견적 요청 내역 메뉴 추가 */}
+            <a href="/quote/requests" className="block">
+              <div className="flex items-center space-x-3 p-6 bg-purple-50 rounded-2xl hover:bg-purple-100 transition-colors cursor-pointer">
+                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-purple-600 text-xl">📋</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">나의 견적 요청</h4>
+                  <p className="text-sm text-gray-600">요청한 견적과 받은 견적을 확인하세요</p>
+                </div>
+                <i className="fas fa-chevron-right text-purple-600"></i>
+              </div>
+            </a>
+            
             <div className="flex items-center space-x-3 p-6 bg-green-50 rounded-2xl">
               <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
                 <span className="text-green-600 text-xl">🌐</span>
@@ -158,9 +204,9 @@ export default function HomePage() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-6 bg-purple-50 rounded-2xl">
-              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                <span className="text-purple-600 text-xl">💬</span>
+            <div className="flex items-center space-x-3 p-6 bg-orange-50 rounded-2xl">
+              <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center">
+                <span className="text-orange-600 text-xl">💬</span>
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 mb-1">1:1 상담</h4>
