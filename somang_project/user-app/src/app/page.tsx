@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import NotificationSettings from '@/components/NotificationSettings';
 
 export default function HomePage() {
   const { user, profile, isLoading: authLoading, isInitializing } = useAuth();
@@ -131,6 +132,14 @@ export default function HomePage() {
               안녕하세요, {profile?.nick_name || user.email}님!
             </p>
           </div>
+
+          // 홈페이지 컴포넌트 내부에 추가:
+<section className="mt-8">
+  <div className="bg-white p-6 rounded-2xl shadow-sm">
+    <h3 className="font-bold text-gray-800 mb-4">🔔 알림 설정</h3>
+    <NotificationSettings />
+  </div>
+</section>
 
           {/* 사용자 정보 카드 */}
           <div className="bg-gray-50 p-6 rounded-2xl mb-6">

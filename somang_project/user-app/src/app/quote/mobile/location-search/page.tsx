@@ -20,6 +20,7 @@ export default function LocationSearchPage() {
   // 상태 관리
   const [isSdkReady, setIsSdkReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoLocating, setIsAutoLocating] = useState(false); // 자동 위치 조회 상태 추가
   const [error, setError] = useState<string | null>(null);
   
   const [myNeighborhood, setMyNeighborhood] = useState<{
@@ -130,6 +131,163 @@ export default function LocationSearchPage() {
     const timer = setTimeout(initializeKakaoMaps, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // 페이지 로드 시 자동으로 현재 위치 가져오기
+  useEffect(() => {
+    if (isSdkReady && !myNeighborhood && !isAutoLocating) {
+      console.log('SDK 준비 완료, 자동 위치 조회 시작');
+      handleAutoFetchCurrentLocation();
+    }
+  }, [isSdkReady]);
+
+  // 자동 현재 위치 가져오기 함수 (페이지 로드 시 실행)
+  const handleAutoFetchCurrentLocation = () => {
+    if (!isSdkReady) {
+      console.log('SDK가 아직 준비되지 않음');
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      console.log('위치 정보가 지원되지 않음');
+      return;
+    }
+
+    setIsAutoLocating(true);
+    setError(null);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 자동 조회시에는 타임아웃을 짧게
+      maximumAge: 300000
+    };
+
+    console.log('자동 Geolocation 요청 시작...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log('자동 위치 획득 성공:', latitude, longitude);
+        
+        try {
+          const geocoder = new window.kakao.maps.services.Geocoder();
+
+          geocoder.coord2Address(longitude, latitude, (result: any[], status: any) => {
+            console.log('자동 Geocoding 결과:', status, result);
+            
+            if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+              const addressData = result[0];
+              console.log('자동 주소 데이터:', addressData);
+              
+              // 지번 주소를 우선으로 사용 (행정동 정보가 더 정확함)
+              let primaryAddress = '';
+              
+              if (addressData.address && addressData.address.address_name) {
+                primaryAddress = addressData.address.address_name;
+                console.log('자동 지번 주소 사용:', primaryAddress);
+              } else if (addressData.road_address && addressData.road_address.address_name) {
+                primaryAddress = addressData.road_address.address_name;
+                console.log('자동 도로명 주소 사용:', primaryAddress);
+              }
+
+              if (primaryAddress) {
+                // 주소에서 동 정보 추출
+                const addressParts = primaryAddress.split(' ');
+                console.log('자동 주소 파츠:', addressParts);
+                
+                if (addressParts.length >= 3) {
+                  // 시/도 구/군 동 형태로 조합
+                  const dongAddress = addressParts.slice(0, 3).join(' ');
+                  console.log('자동 동 주소:', dongAddress);
+                  
+                  const formatted = {
+                    display: dongAddress,
+                    full: primaryAddress
+                  };
+                  
+                  setMyNeighborhood(formatted);
+                  
+                  // 근처 지역 검색을 위해 Places 검색 사용
+                  const ps = new window.kakao.maps.services.Places();
+                  
+                  // 주변 지역을 키워드 검색으로 찾기
+                  const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
+                  console.log('자동 근처 지역 검색:', searchQuery);
+                  
+                  ps.keywordSearch(searchQuery, (data: any[], catStatus: any) => {
+                    console.log('자동 근처 지역 검색 결과:', catStatus, data);
+                    
+                    if (catStatus === window.kakao.maps.services.Status.OK && data.length > 0) {
+                      const nearbyFormatted = data
+                        .filter(place => {
+                          // 행정동인지 확인
+                          const placeName = place.place_name || '';
+                          const placeAddress = place.address_name || '';
+                          
+                          // 동으로 끝나는 장소만 필터링
+                          return /[동읍면]$/.test(placeName) || /[동읍면]/.test(placeAddress);
+                        })
+                        .map(place => {
+                          const placeAddress = place.address_name || '';
+                          const placeParts = placeAddress.split(' ');
+                          
+                          if (placeParts.length >= 3) {
+                            const dongName = placeParts.slice(0, 3).join(' ');
+                            return {
+                              display: dongName,
+                              full: placeAddress
+                            };
+                          }
+                          return null;
+                        })
+                        .filter(location => 
+                          location && 
+                          location.display !== dongAddress && // 현재 위치와 다른 것만
+                          location.display.includes(addressParts[0]) && // 같은 시/도
+                          location.display.includes(addressParts[1]) // 같은 구/군
+                        )
+                        .filter((location, index, arr) => 
+                          // 중복 제거
+                          arr.findIndex(l => l && l.display === location!.display) === index
+                        )
+                        .slice(0, 9);
+                      
+                      console.log('자동 필터링된 근처 지역:', nearbyFormatted);
+                      setNearbyLocations(nearbyFormatted as any[]);
+                    } else {
+                      // 검색 결과가 없으면 빈 배열 설정
+                      setNearbyLocations([]);
+                    }
+                    setIsAutoLocating(false);
+                  }, { 
+                    location: new window.kakao.maps.LatLng(latitude, longitude), 
+                    radius: 5000 // 5km로 확장
+                  });
+                } else {
+                  console.error('자동 주소 파싱 실패:', primaryAddress);
+                  setIsAutoLocating(false);
+                }
+              } else {
+                console.error('자동 주소 정보 없음');
+                setIsAutoLocating(false);
+              }
+            } else {
+              console.error('자동 Geocoding 실패:', status);
+              setIsAutoLocating(false);
+            }
+          });
+        } catch (error) {
+          console.error('자동 Geocoding 오류:', error);
+          setIsAutoLocating(false);
+        }
+      },
+      (geoError) => {
+        console.log('자동 Geolocation 오류 (무시됨):', geoError);
+        // 자동 조회 실패는 조용히 처리 (에러 메시지 표시하지 않음)
+        setIsAutoLocating(false);
+      },
+      options
+    );
+  };
 
   // 검색어 기반 장소 검색 (동 단위만 필터링)
   const searchPlaces = useCallback((term: string) => {
@@ -258,8 +416,8 @@ export default function LocationSearchPage() {
     router.push('/quote/mobile/step7');
   };
 
-  // 현재 위치 불러오기 핸들러
-  const handleFetchCurrentLocation = () => {
+  // 수동 현재 위치 불러오기 핸들러 (버튼 클릭 시)
+  const handleManualFetchCurrentLocation = () => {
     if (!isSdkReady) {
       setError("지도 서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
@@ -283,43 +441,43 @@ export default function LocationSearchPage() {
       maximumAge: 300000
     };
 
-    console.log('Geolocation 요청 시작...');
+    console.log('수동 Geolocation 요청 시작...');
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log('위치 획득 성공:', latitude, longitude);
+        console.log('수동 위치 획득 성공:', latitude, longitude);
         
         try {
           const geocoder = new window.kakao.maps.services.Geocoder();
 
           geocoder.coord2Address(longitude, latitude, (result: any[], status: any) => {
-            console.log('Geocoding 결과:', status, result);
+            console.log('수동 Geocoding 결과:', status, result);
             
             if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
               const addressData = result[0];
-              console.log('주소 데이터:', addressData);
+              console.log('수동 주소 데이터:', addressData);
               
               // 지번 주소를 우선으로 사용 (행정동 정보가 더 정확함)
               let primaryAddress = '';
               
               if (addressData.address && addressData.address.address_name) {
                 primaryAddress = addressData.address.address_name;
-                console.log('지번 주소 사용:', primaryAddress);
+                console.log('수동 지번 주소 사용:', primaryAddress);
               } else if (addressData.road_address && addressData.road_address.address_name) {
                 primaryAddress = addressData.road_address.address_name;
-                console.log('도로명 주소 사용:', primaryAddress);
+                console.log('수동 도로명 주소 사용:', primaryAddress);
               }
 
               if (primaryAddress) {
                 // 주소에서 동 정보 추출
                 const addressParts = primaryAddress.split(' ');
-                console.log('주소 파츠:', addressParts);
+                console.log('수동 주소 파츠:', addressParts);
                 
                 if (addressParts.length >= 3) {
                   // 시/도 구/군 동 형태로 조합
                   const dongAddress = addressParts.slice(0, 3).join(' ');
-                  console.log('동 주소:', dongAddress);
+                  console.log('수동 동 주소:', dongAddress);
                   
                   const formatted = {
                     display: dongAddress,
@@ -333,10 +491,10 @@ export default function LocationSearchPage() {
                   
                   // 주변 지역을 키워드 검색으로 찾기
                   const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
-                  console.log('근처 지역 검색:', searchQuery);
+                  console.log('수동 근처 지역 검색:', searchQuery);
                   
                   ps.keywordSearch(searchQuery, (data: any[], catStatus: any) => {
-                    console.log('근처 지역 검색 결과:', catStatus, data);
+                    console.log('수동 근처 지역 검색 결과:', catStatus, data);
                     
                     if (catStatus === window.kakao.maps.services.Status.OK && data.length > 0) {
                       const nearbyFormatted = data
@@ -373,7 +531,7 @@ export default function LocationSearchPage() {
                         )
                         .slice(0, 9);
                       
-                      console.log('필터링된 근처 지역:', nearbyFormatted);
+                      console.log('수동 필터링된 근처 지역:', nearbyFormatted);
                       setNearbyLocations(nearbyFormatted as any[]);
                     } else {
                       // 검색 결과가 없으면 빈 배열 설정
@@ -385,29 +543,29 @@ export default function LocationSearchPage() {
                     radius: 5000 // 5km로 확장
                   });
                 } else {
-                  console.error('주소 파싱 실패:', primaryAddress);
+                  console.error('수동 주소 파싱 실패:', primaryAddress);
                   setError("주소 형식을 인식할 수 없습니다.");
                   setIsLoading(false);
                 }
               } else {
-                console.error('주소 정보 없음');
+                console.error('수동 주소 정보 없음');
                 setError("주소 정보를 처리할 수 없습니다.");
                 setIsLoading(false);
               }
             } else {
-              console.error('Geocoding 실패:', status);
+              console.error('수동 Geocoding 실패:', status);
               setError("현재 주소를 가져오지 못했습니다. 다시 시도해주세요.");
               setIsLoading(false);
             }
           });
         } catch (error) {
-          console.error('Geocoding 오류:', error);
+          console.error('수동 Geocoding 오류:', error);
           setError("주소 변환 중 오류가 발생했습니다.");
           setIsLoading(false);
         }
       },
       (geoError) => {
-        console.error('Geolocation 오류:', geoError);
+        console.error('수동 Geolocation 오류:', geoError);
         let errorMessage = '위치 정보를 가져오는 중 오류가 발생했습니다.';
         
         switch (geoError.code) {
@@ -466,7 +624,7 @@ export default function LocationSearchPage() {
             </div>
             
             <button 
-              onClick={handleFetchCurrentLocation} 
+              onClick={handleManualFetchCurrentLocation} 
               disabled={isLoading || !isSdkReady} 
               className="w-full flex items-center justify-center text-blue-600 font-semibold py-3 mt-2 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -474,12 +632,20 @@ export default function LocationSearchPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              {isLoading ? '위치 찾는 중...' : (isSdkReady ? '현재 위치 불러오기' : '지도 서비스 로딩 중...')}
+              {isLoading ? '위치 찾는 중...' : (isSdkReady ? '현재 위치 다시 불러오기' : '지도 서비스 로딩 중...')}
             </button>
           </div>
           
           <div className="mt-4">
-            {/* 로딩 상태 */}
+            {/* 자동 위치 조회 로딩 상태 */}
+            {isAutoLocating && (
+              <div className="py-4 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                현재 위치를 자동으로 가져오는 중...
+              </div>
+            )}
+            
+            {/* 수동 로딩 상태 */}
             {isLoading && (
               <div className="py-4 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -501,7 +667,7 @@ export default function LocationSearchPage() {
             )}
             
             {/* 검색 결과 표시 */}
-            {searchResults.length > 0 && !isLoading && (
+            {searchResults.length > 0 && !isLoading && !isAutoLocating && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 mb-2">검색 결과</h3>
                 <ul className="divide-y divide-gray-200">
@@ -522,7 +688,7 @@ export default function LocationSearchPage() {
             )}
 
             {/* 현재 위치 결과 표시 */}
-            {myNeighborhood && !isLoading && !error && searchResults.length === 0 && (
+            {myNeighborhood && !isLoading && !isAutoLocating && !error && searchResults.length === 0 && (
               <>
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <h3 className="text-sm font-semibold text-gray-500 mb-2">우리동네</h3>
@@ -554,7 +720,7 @@ export default function LocationSearchPage() {
             )}
 
             {/* 초기 상태 메시지 */}
-            {!isLoading && !error && !myNeighborhood && searchResults.length === 0 && (
+            {!isLoading && !isAutoLocating && !error && !myNeighborhood && searchResults.length === 0 && (
               <div className="text-center py-16 text-gray-400">
                 <div className="text-4xl mb-4">🏘️</div>
                 <p>동 이름을 검색하거나<br/>현재 위치를 불러와주세요.</p>

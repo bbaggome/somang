@@ -1,14 +1,14 @@
 // /biz-app/src/app/quote/send/[requestId]/page.tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 interface QuoteRequest {
   id: string;
   created_at: string;
-  status: 'open' | 'closed' | 'expired';
+  status: "open" | "closed" | "expired";
   product_type: string;
   request_details: {
     purchaseTarget: string;
@@ -48,23 +48,23 @@ interface QuoteDetails {
   device_price: number;
   monthly_fee: number;
   activation_fee: number;
-  
+
   // 할인 정보
   device_discount: number;
   plan_discount: number;
   additional_discount: number;
-  
+
   // TCO (Total Cost of Ownership)
   tco_24months: number;
-  
+
   // 특별 혜택
   special_benefits: string[];
-  
+
   // 기타 조건
   contract_period: number; // 개월
-  installation_method: 'visit' | 'delivery' | 'pickup';
+  installation_method: "visit" | "delivery" | "pickup";
   delivery_fee: number;
-  
+
   // 메모
   store_memo: string;
 }
@@ -73,14 +73,14 @@ export default function QuoteSendPage() {
   const router = useRouter();
   const params = useParams();
   const requestId = params.requestId as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest | null>(null);
   const [device, setDevice] = useState<Device | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 견적 상세 정보
   const [quoteDetails, setQuoteDetails] = useState<QuoteDetails>({
     device_price: 0,
@@ -92,9 +92,9 @@ export default function QuoteSendPage() {
     tco_24months: 0,
     special_benefits: [],
     contract_period: 24,
-    installation_method: 'visit',
+    installation_method: "visit",
     delivery_fee: 0,
-    store_memo: ''
+    store_memo: "",
   });
 
   useEffect(() => {
@@ -114,121 +114,128 @@ export default function QuoteSendPage() {
     quoteDetails.plan_discount,
     quoteDetails.additional_discount,
     quoteDetails.delivery_fee,
-    quoteDetails.contract_period
+    quoteDetails.contract_period,
   ]);
 
   const loadQuoteRequest = async () => {
     try {
       setLoading(true);
-      
-      console.log('견적 요청 로드 시작, requestId:', requestId);
-      
+
+      console.log("견적 요청 로드 시작, requestId:", requestId);
+
       // 1. 견적 요청 정보만 먼저 로드
       const { data: requestData, error: requestError } = await supabase
-        .from('quote_requests')
-        .select('*')
-        .eq('id', requestId)
+        .from("quote_requests")
+        .select("*")
+        .eq("id", requestId)
         .single();
 
       if (requestError) {
-        console.error('견적 요청 로드 오류:', requestError);
+        console.error("견적 요청 로드 오류:", requestError);
         throw requestError;
       }
-      
-      console.log('견적 요청 데이터:', requestData);
+
+      console.log("견적 요청 데이터:", requestData);
 
       // 2. 사용자 프로필 정보 별도 로드
       let userProfile = null;
       if (requestData.user_id) {
-        console.log('사용자 프로필 로드 시작, user_id:', requestData.user_id);
-        
+        console.log("사용자 프로필 로드 시작, user_id:", requestData.user_id);
+
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('name, phone_number')
-          .eq('id', requestData.user_id)
+          .from("profiles")
+          .select("name, phone_number")
+          .eq("id", requestData.user_id)
           .single();
 
         if (profileError) {
-          console.warn('프로필 로드 실패:', profileError);
+          console.warn("프로필 로드 실패:", profileError);
           // 프로필 로드 실패해도 견적 요청은 계속 처리
-          userProfile = { name: '고객', phone_number: null };
+          userProfile = { name: "고객", phone_number: null };
         } else {
-          console.log('프로필 데이터:', profileData);
+          console.log("프로필 데이터:", profileData);
           userProfile = profileData;
         }
       } else {
-        console.warn('user_id가 없습니다.');
-        userProfile = { name: '고객', phone_number: null };
+        console.warn("user_id가 없습니다.");
+        userProfile = { name: "고객", phone_number: null };
       }
-      
+
       // 3. 데이터 결합
       const transformedRequest = {
         ...requestData,
-        user_profiles: userProfile
+        user_profiles: userProfile,
       } as QuoteRequest;
-      
+
       setQuoteRequest(transformedRequest);
 
       // 4. 디바이스 정보 로드
       if (transformedRequest.request_details?.deviceId) {
-        console.log('디바이스 정보 로드 시작, deviceId:', transformedRequest.request_details.deviceId);
-        
+        console.log(
+          "디바이스 정보 로드 시작, deviceId:",
+          transformedRequest.request_details.deviceId
+        );
+
         const { data: deviceData, error: deviceError } = await supabase
-          .from('devices')
-          .select('*')
-          .eq('id', transformedRequest.request_details.deviceId)
+          .from("devices")
+          .select("*")
+          .eq("id", transformedRequest.request_details.deviceId)
           .single();
 
         if (deviceError) {
-          console.error('디바이스 정보 로드 실패:', deviceError);
-          setError('디바이스 정보를 불러올 수 없습니다.');
+          console.error("디바이스 정보 로드 실패:", deviceError);
+          setError("디바이스 정보를 불러올 수 없습니다.");
           return;
         } else {
-          console.log('디바이스 데이터:', deviceData);
+          console.log("디바이스 데이터:", deviceData);
           setDevice(deviceData);
-          
+
           // 기기별 기본 가격 설정 (임시 로직)
-          const basePrice = deviceData.device_name.includes('Pro') ? 1500000 : 
-                           deviceData.device_name.includes('Ultra') ? 1800000 : 1200000;
-          
-          setQuoteDetails(prev => ({
+          const basePrice = deviceData.device_name.includes("Pro")
+            ? 1500000
+            : deviceData.device_name.includes("Ultra")
+            ? 1800000
+            : 1200000;
+
+          setQuoteDetails((prev) => ({
             ...prev,
-            device_price: basePrice
+            device_price: basePrice,
           }));
         }
       } else {
-        console.warn('deviceId가 없습니다.');
-        setError('디바이스 정보가 없습니다.');
+        console.warn("deviceId가 없습니다.");
+        setError("디바이스 정보가 없습니다.");
         return;
       }
 
       // 5. 현재 사용자의 매장 정보 로드
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        console.log('매장 정보 로드 시작, owner_id:', user.id);
-        
+        console.log("매장 정보 로드 시작, owner_id:", user.id);
+
         const { data: storeData, error: storeError } = await supabase
-          .from('stores')
-          .select('*')
-          .eq('owner_id', user.id)
+          .from("stores")
+          .select("*")
+          .eq("owner_id", user.id)
           .single();
 
         if (storeError) {
-          console.error('매장 정보 로드 실패:', storeError);
-          setError('매장 정보를 찾을 수 없습니다. 매장 등록이 필요합니다.');
+          console.error("매장 정보 로드 실패:", storeError);
+          setError("매장 정보를 찾을 수 없습니다. 매장 등록이 필요합니다.");
           return;
         } else {
-          console.log('매장 데이터:', storeData);
+          console.log("매장 데이터:", storeData);
           setStore(storeData);
         }
       } else {
-        console.error('인증된 사용자가 없습니다.');
-        setError('로그인이 필요합니다.');
+        console.error("인증된 사용자가 없습니다.");
+        setError("로그인이 필요합니다.");
         return;
       }
-
     } catch (error: any) {
-      console.error('견적 요청 로드 실패:', error);
+      console.error("견적 요청 로드 실패:", error);
       setError(`견적 요청 정보를 불러올 수 없습니다: ${error.message}`);
     } finally {
       setLoading(false);
@@ -244,115 +251,234 @@ export default function QuoteSendPage() {
       plan_discount,
       additional_discount,
       delivery_fee,
-      contract_period
+      contract_period,
     } = quoteDetails;
 
     const totalDeviceCost = Math.max(0, device_price - device_discount);
     const totalPlanCost = (monthly_fee - plan_discount) * contract_period;
-    const totalCost = totalDeviceCost + totalPlanCost + activation_fee + delivery_fee - additional_discount;
+    const totalCost =
+      totalDeviceCost +
+      totalPlanCost +
+      activation_fee +
+      delivery_fee -
+      additional_discount;
 
-    setQuoteDetails(prev => ({
+    setQuoteDetails((prev) => ({
       ...prev,
-      tco_24months: Math.max(0, totalCost)
+      tco_24months: Math.max(0, totalCost),
     }));
   };
 
   const handleInputChange = (field: keyof QuoteDetails, value: any) => {
-    setQuoteDetails(prev => ({
+    setQuoteDetails((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleBenefitToggle = (benefit: string) => {
-    setQuoteDetails(prev => ({
+    setQuoteDetails((prev) => ({
       ...prev,
       special_benefits: prev.special_benefits.includes(benefit)
-        ? prev.special_benefits.filter(b => b !== benefit)
-        : [...prev.special_benefits, benefit]
+        ? prev.special_benefits.filter((b) => b !== benefit)
+        : [...prev.special_benefits, benefit],
     }));
   };
 
   const handleSubmit = async () => {
     if (!quoteRequest || !store) {
-      setError('필요한 정보가 없습니다.');
+      setError("필요한 정보가 없습니다.");
       return;
     }
 
     // 유효성 검사
     if (quoteDetails.device_price <= 0) {
-      setError('기기 가격을 입력해주세요.');
+      setError("기기 가격을 입력해주세요.");
       return;
     }
     if (quoteDetails.monthly_fee <= 0) {
-      setError('월 이용료를 입력해주세요.');
+      setError("월 이용료를 입력해주세요.");
       return;
     }
 
     setSubmitting(true);
     try {
-      console.log('견적 전송 시작');
-      console.log('Store ID:', store.id);
-      console.log('Request ID:', requestId);
-      console.log('Quote Details:', quoteDetails);
-      
+      console.log("견적 전송 시작");
+      console.log("Store ID:", store.id);
+      console.log("Request ID:", requestId);
+      console.log("Quote Details:", quoteDetails);
+
       // 현재 사용자 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.id);
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      console.log("Current user:", user?.id);
+
       // 매장 소유권 확인
       const { data: storeCheck, error: storeError } = await supabase
-        .from('stores')
-        .select('id, owner_id, name')
-        .eq('id', store.id)
-        .eq('owner_id', user?.id)
+        .from("stores")
+        .select("id, owner_id, name")
+        .eq("id", store.id)
+        .eq("owner_id", user?.id)
         .single();
-        
+
       if (storeError || !storeCheck) {
-        console.error('매장 소유권 확인 실패:', storeError);
-        setError('매장 정보를 확인할 수 없습니다.');
+        console.error("매장 소유권 확인 실패:", storeError);
+        setError("매장 정보를 확인할 수 없습니다.");
         return;
       }
-      
-      console.log('매장 소유권 확인됨:', storeCheck);
+
+      console.log("매장 소유권 확인됨:", storeCheck);
 
       // 견적 생성
       const { data: quoteData, error: quoteError } = await supabase
-        .from('quotes')
+        .from("quotes")
         .insert({
           request_id: requestId,
           store_id: store.id,
           quote_details: quoteDetails,
-          status: 'sent'
+          status: "sent",
         })
         .select()
         .single();
 
       if (quoteError) {
-        console.error('견적 생성 오류:', quoteError);
-        
+        console.error("견적 생성 오류:", quoteError);
+
         // 구체적인 오류 메시지
-        if (quoteError.code === '42501') {
-          setError('견적 생성 권한이 없습니다. 매장 등록 상태를 확인해주세요.');
-        } else if (quoteError.code === '23505') {
-          setError('이미 이 요청에 대한 견적을 보냈습니다.');
+        if (quoteError.code === "42501") {
+          setError("견적 생성 권한이 없습니다. 매장 등록 상태를 확인해주세요.");
+        } else if (quoteError.code === "23505") {
+          setError("이미 이 요청에 대한 견적을 보냈습니다.");
         } else {
           setError(`견적 생성 실패: ${quoteError.message}`);
         }
         return;
       }
 
-      console.log('견적 생성 성공:', quoteData);
-      alert('견적서가 성공적으로 전송되었습니다!');
-      router.back();
+      console.log("견적 생성 성공:", quoteData);
 
+      // ✨ 여기에 Push 알림 발송 로직 추가 ✨
+      try {
+  await sendPushNotificationToUser(requestId, store.name, quoteDetails);
+  console.log('Push 알림 발송 성공');
+  
+  // 성공 메시지에 알림 발송 완료 포함
+  alert('견적서가 성공적으로 전송되었고, 고객에게 알림이 발송되었습니다!');
+} catch (notificationError) {
+  console.error('Push 알림 발송 실패:', notificationError);
+  // 알림 실패는 견적 전송 성공에 영향주지 않음
+  alert('견적서가 성공적으로 전송되었습니다!\n(알림 발송은 실패했을 수 있습니다)');
+}
+
+      alert("견적서가 성공적으로 전송되었습니다!");
+      router.back();
     } catch (error: any) {
-      console.error('견적 전송 실패:', error);
+      console.error("견적 전송 실패:", error);
       setError(`견적 전송 중 오류가 발생했습니다: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Push 알림 발송 함수
+  async function sendPushNotificationToUser(
+    requestId: string,
+    storeName: string,
+    quoteDetails: any
+  ) {
+    try {
+      // 견적 요청의 사용자 정보 조회
+      const { data: requestData, error: requestError } = await supabase
+        .from("quote_requests")
+        .select("user_id, request_details")
+        .eq("id", requestId)
+        .single();
+
+      if (requestError || !requestData) {
+        console.error("견적 요청 정보 조회 실패:", requestError);
+        return;
+      }
+
+      // 사용자의 Push 구독 정보 조회
+      const { data: subscriptions, error: subscriptionError } = await supabase
+        .from("user_push_subscriptions")
+        .select("*")
+        .eq("user_id", requestData.user_id)
+        .eq("is_active", true);
+
+      if (subscriptionError) {
+        console.error("구독 정보 조회 실패:", subscriptionError);
+        return;
+      }
+
+      if (!subscriptions || subscriptions.length === 0) {
+        console.log("사용자의 활성 Push 구독이 없습니다.");
+        return;
+      }
+
+      // 디바이스 정보 조회 (알림 메시지에 포함하기 위해)
+      let deviceName = "휴대폰";
+      if (requestData.request_details?.deviceId) {
+        const { data: deviceData } = await supabase
+          .from("devices")
+          .select("device_name")
+          .eq("id", requestData.request_details.deviceId)
+          .single();
+
+        if (deviceData) {
+          deviceName = deviceData.device_name;
+        }
+      }
+
+      // 알림 페이로드 생성
+      const notificationPayload = {
+        title: "💰 새로운 견적이 도착했어요!",
+        body: `${storeName}에서 ${deviceName} 견적을 보냈습니다. 총 ${formatCurrency(
+          quoteDetails.tco_24months
+        )}원`,
+        icon: "/icon-192x192.png",
+        badge: "/badge-72x72.png",
+        tag: `quote-${requestId}`,
+        data: {
+          url: `/quote/requests/${requestId}`,
+          quoteId: requestId,
+          storeName: storeName,
+          totalCost: quoteDetails.tco_24months,
+        },
+        requireInteraction: true,
+        actions: [
+          {
+            action: "view",
+            title: "견적 확인하기",
+          },
+          {
+            action: "close",
+            title: "나중에",
+          },
+        ],
+      };
+
+      // 서버 사이드에서 Push 알림 발송 (Edge Function 호출)
+      const { error: pushError } = await supabase.functions.invoke(
+        "send-push-notification",
+        {
+          body: {
+            subscriptions: subscriptions,
+            payload: notificationPayload,
+          },
+        }
+      );
+
+      if (pushError) {
+        console.error("Push 알림 발송 실패:", pushError);
+      } else {
+        console.log("Push 알림 발송 성공");
+      }
+    } catch (error) {
+      console.error("Push 알림 발송 중 오류:", error);
+    }
+  }
 
   if (loading) {
     return (
@@ -370,12 +496,22 @@ export default function QuoteSendPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="mb-4">
-            <svg className="w-16 h-16 text-red-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <svg
+              className="w-16 h-16 text-red-500 mx-auto"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">오류 발생</h2>
-          <p className="text-gray-600 mb-6">{error || '견적 요청 정보를 찾을 수 없습니다.'}</p>
+          <p className="text-gray-600 mb-6">
+            {error || "견적 요청 정보를 찾을 수 없습니다."}
+          </p>
           <button
             onClick={() => router.back()}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
@@ -388,7 +524,7 @@ export default function QuoteSendPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ko-KR').format(amount);
+    return new Intl.NumberFormat("ko-KR").format(amount);
   };
 
   return (
@@ -398,19 +534,29 @@ export default function QuoteSendPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <button 
+              <button
                 onClick={() => router.back()}
                 className="mr-4 p-2 rounded-md hover:bg-gray-100"
                 aria-label="뒤로가기"
               >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
               <h1 className="text-xl font-bold text-gray-900">견적서 작성</h1>
             </div>
             <span className="text-sm text-gray-500">
-              요청자: {quoteRequest.user_profiles?.name || '고객'}님
+              요청자: {quoteRequest.user_profiles?.name || "고객"}님
             </span>
           </div>
         </div>
@@ -423,15 +569,23 @@ export default function QuoteSendPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-gray-500">요청 기기:</span>
-              <p className="font-medium">{device.device_name} {device.storage_options[0]}GB</p>
+              <p className="font-medium">
+                {device.device_name} {device.storage_options[0]}GB
+              </p>
             </div>
             <div>
               <span className="text-gray-500">희망 색상:</span>
-              <p className="font-medium">{quoteRequest.request_details.color === 'any' ? '색상무관' : quoteRequest.request_details.color}</p>
+              <p className="font-medium">
+                {quoteRequest.request_details.color === "any"
+                  ? "색상무관"
+                  : quoteRequest.request_details.color}
+              </p>
             </div>
             <div>
               <span className="text-gray-500">데이터 사용량:</span>
-              <p className="font-medium">{quoteRequest.request_details.dataUsage}</p>
+              <p className="font-medium">
+                {quoteRequest.request_details.dataUsage}
+              </p>
             </div>
           </div>
         </div>
@@ -439,11 +593,13 @@ export default function QuoteSendPage() {
         {/* 견적서 작성 폼 */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-bold mb-6">견적 상세 정보</h2>
-          
+
           <div className="space-y-8">
             {/* 기본 가격 정보 */}
             <section>
-              <h3 className="text-md font-semibold mb-4 text-gray-800">기본 가격</h3>
+              <h3 className="text-md font-semibold mb-4 text-gray-800">
+                기본 가격
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -452,7 +608,12 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.device_price}
-                    onChange={(e) => handleInputChange('device_price', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "device_price",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="1200000"
                     required
@@ -465,7 +626,12 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.monthly_fee}
-                    onChange={(e) => handleInputChange('monthly_fee', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "monthly_fee",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="65000"
                     required
@@ -478,9 +644,14 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.activation_fee}
-                    onChange={(e) => handleInputChange('activation_fee', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "activation_fee",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    aria-label='개통비'
+                    aria-label="개통비"
                   />
                 </div>
                 <div>
@@ -489,9 +660,14 @@ export default function QuoteSendPage() {
                   </label>
                   <select
                     value={quoteDetails.contract_period}
-                    onChange={(e) => handleInputChange('contract_period', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contract_period",
+                        parseInt(e.target.value)
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    aria-label='약정 기간'
+                    aria-label="약정 기간"
                   >
                     <option value={24}>24개월</option>
                     <option value={12}>12개월</option>
@@ -503,7 +679,9 @@ export default function QuoteSendPage() {
 
             {/* 할인 정보 */}
             <section>
-              <h3 className="text-md font-semibold mb-4 text-gray-800">할인 혜택</h3>
+              <h3 className="text-md font-semibold mb-4 text-gray-800">
+                할인 혜택
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -512,7 +690,12 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.device_discount}
-                    onChange={(e) => handleInputChange('device_discount', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "device_discount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="200000"
                   />
@@ -524,7 +707,12 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.plan_discount}
-                    onChange={(e) => handleInputChange('plan_discount', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "plan_discount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="10000"
                   />
@@ -536,7 +724,12 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.additional_discount}
-                    onChange={(e) => handleInputChange('additional_discount', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "additional_discount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="50000"
                   />
@@ -546,7 +739,9 @@ export default function QuoteSendPage() {
 
             {/* 개통 방법 */}
             <section>
-              <h3 className="text-md font-semibold mb-4 text-gray-800">개통 방법</h3>
+              <h3 className="text-md font-semibold mb-4 text-gray-800">
+                개통 방법
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -554,9 +749,11 @@ export default function QuoteSendPage() {
                   </label>
                   <select
                     value={quoteDetails.installation_method}
-                    onChange={(e) => handleInputChange('installation_method', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("installation_method", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    aria-label='개통 방식'
+                    aria-label="개통 방식"
                   >
                     <option value="visit">매장 방문</option>
                     <option value="delivery">택배 발송</option>
@@ -570,10 +767,15 @@ export default function QuoteSendPage() {
                   <input
                     type="number"
                     value={quoteDetails.delivery_fee}
-                    onChange={(e) => handleInputChange('delivery_fee', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "delivery_fee",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    aria-label='배송비'
-                    disabled={quoteDetails.installation_method === 'visit'}
+                    aria-label="배송비"
+                    disabled={quoteDetails.installation_method === "visit"}
                   />
                 </div>
               </div>
@@ -581,26 +783,33 @@ export default function QuoteSendPage() {
 
             {/* 특별 혜택 */}
             <section>
-              <h3 className="text-md font-semibold mb-4 text-gray-800">특별 혜택</h3>
+              <h3 className="text-md font-semibold mb-4 text-gray-800">
+                특별 혜택
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  '무료 액세서리',
-                  '무료 보험',
-                  '데이터 추가 제공',
-                  '통화료 할인',
-                  '멤버십 혜택',
-                  '가족 할인',
-                  '학생 할인',
-                  '경로 할인'
-                ].map(benefit => (
-                  <label key={benefit} className="flex items-center cursor-pointer">
+                  "무료 액세서리",
+                  "무료 보험",
+                  "데이터 추가 제공",
+                  "통화료 할인",
+                  "멤버십 혜택",
+                  "가족 할인",
+                  "학생 할인",
+                  "경로 할인",
+                ].map((benefit) => (
+                  <label
+                    key={benefit}
+                    className="flex items-center cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={quoteDetails.special_benefits.includes(benefit)}
                       onChange={() => handleBenefitToggle(benefit)}
                       className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">{benefit}</span>
+                    <span className="ml-2 text-sm text-gray-700">
+                      {benefit}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -608,10 +817,14 @@ export default function QuoteSendPage() {
 
             {/* 매장 메모 */}
             <section>
-              <h3 className="text-md font-semibold mb-4 text-gray-800">매장 메모</h3>
+              <h3 className="text-md font-semibold mb-4 text-gray-800">
+                매장 메모
+              </h3>
               <textarea
                 value={quoteDetails.store_memo}
-                onChange={(e) => handleInputChange('store_memo', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("store_memo", e.target.value)
+                }
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="고객에게 전달할 추가 메시지나 조건이 있으면 입력해주세요..."
@@ -620,24 +833,39 @@ export default function QuoteSendPage() {
 
             {/* TCO 요약 */}
             <section className="bg-blue-50 p-6 rounded-lg">
-              <h3 className="text-lg font-bold mb-4 text-blue-900">총 비용 요약 (TCO)</h3>
+              <h3 className="text-lg font-bold mb-4 text-blue-900">
+                총 비용 요약 (TCO)
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-blue-700">기기 비용:</span>
                   <p className="font-bold text-blue-900">
-                    {formatCurrency(Math.max(0, quoteDetails.device_price - quoteDetails.device_discount))}원
+                    {formatCurrency(
+                      Math.max(
+                        0,
+                        quoteDetails.device_price - quoteDetails.device_discount
+                      )
+                    )}
+                    원
                   </p>
                 </div>
                 <div>
                   <span className="text-blue-700">요금제 비용:</span>
                   <p className="font-bold text-blue-900">
-                    {formatCurrency((quoteDetails.monthly_fee - quoteDetails.plan_discount) * quoteDetails.contract_period)}원
+                    {formatCurrency(
+                      (quoteDetails.monthly_fee - quoteDetails.plan_discount) *
+                        quoteDetails.contract_period
+                    )}
+                    원
                   </p>
                 </div>
                 <div>
                   <span className="text-blue-700">기타 비용:</span>
                   <p className="font-bold text-blue-900">
-                    {formatCurrency(quoteDetails.activation_fee + quoteDetails.delivery_fee)}원
+                    {formatCurrency(
+                      quoteDetails.activation_fee + quoteDetails.delivery_fee
+                    )}
+                    원
                   </p>
                 </div>
                 <div className="border-l-2 border-blue-300 pl-4">
@@ -660,10 +888,14 @@ export default function QuoteSendPage() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={submitting || quoteDetails.device_price <= 0 || quoteDetails.monthly_fee <= 0}
+              disabled={
+                submitting ||
+                quoteDetails.device_price <= 0 ||
+                quoteDetails.monthly_fee <= 0
+              }
               className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? '전송 중...' : '견적서 전송'}
+              {submitting ? "전송 중..." : "견적서 전송"}
             </button>
           </div>
         </div>
