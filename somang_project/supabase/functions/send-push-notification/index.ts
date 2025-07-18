@@ -1,9 +1,19 @@
+// supabase/functions/send-push-notification/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// 타입 정의
+interface PushResult {
+  user_id: string;
+  endpoint: string;
+  success: boolean;
+  statusCode?: number;
+  error?: string;
 }
 
 interface PushSubscription {
@@ -33,7 +43,7 @@ interface RequestBody {
   payload: NotificationPayload;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // CORS 헤더 처리
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -41,8 +51,8 @@ serve(async (req) => {
 
   try {
     // 환경 변수 확인
-    const vapidPrivateKey = Deno.env.get('BBD37H9S5wtJZSss9nKP-4VfqjLrQA7PheZiL-MGm8xNntMqrhDrTvVbZVntVzXFlUEHhMZKuNiAjyO2j_KVxH8')
-    const vapidPublicKey = Deno.env.get('RPrVF9bI0VqgjXz5AUNsrqnA4xyXP_HkxNQi6vq03UY')
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:jackson@adasoft.kr'
 
     if (!vapidPrivateKey || !vapidPublicKey) {
@@ -62,7 +72,7 @@ serve(async (req) => {
       )
     }
 
-    const results = []
+    const results: PushResult[] = []
 
     // 각 구독에 대해 Push 알림 발송
     for (const subscription of subscriptions) {
@@ -75,8 +85,8 @@ serve(async (req) => {
           },
         }
 
-        // Web Push 라이브러리 사용 (npm:web-push 모듈)
-        const webpush = await import('npm:web-push@3.6.6')
+        // Web Push 라이브러리 사용
+        const webpush = await import('https://esm.sh/web-push@3.6.6')
         
         // VAPID 설정
         webpush.setVapidDetails(
@@ -104,7 +114,7 @@ serve(async (req) => {
 
         console.log(`Push sent successfully to user ${subscription.user_id}`)
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Failed to send push to user ${subscription.user_id}:`, error)
         
         results.push({
@@ -142,7 +152,7 @@ serve(async (req) => {
       }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Push notification error:', error)
     
     return new Response(

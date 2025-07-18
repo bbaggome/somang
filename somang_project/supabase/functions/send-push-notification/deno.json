@@ -1,3 +1,12 @@
 {
-  "imports": {}
+  "imports": {
+    "std/": "https://deno.land/std@0.168.0/",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2",
+    "web-push": "https://esm.sh/web-push@3.6.6"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  }
 }
