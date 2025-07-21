@@ -1,12 +1,11 @@
-// 6. user-app/src/app/layout.tsx (수정)
-// NotificationProvider 추가
-
+// user-app/src/app/layout.tsx (수정된 버전)
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import { NotificationProvider } from "@/components/NotificationProvider"; // 추가
-import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt"; // 추가
+import { NotificationProvider } from "@/components/NotificationProvider";
+import { RealtimeNotificationProvider } from "@/components/RealtimeNotificationProvider"; // 추가
+import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,14 +22,13 @@ export const metadata: Metadata = {
   description: "가장 투명한 통신 견적 비교",
   keywords: ["통신", "견적", "비교", "T-BRIDGE"],
   authors: [{ name: "T-BRIDGE Team" }],
-  // PWA 매니페스트 추가
   manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#2563eb', // 테마 컬러 추가
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
@@ -46,8 +44,10 @@ export default function RootLayout({
       >
         <AuthProvider>
           <NotificationProvider>
-            {children}
-            <NotificationPermissionPrompt />
+            <RealtimeNotificationProvider> {/* 실시간 알림 추가 */}
+              {children}
+              <NotificationPermissionPrompt />
+            </RealtimeNotificationProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>

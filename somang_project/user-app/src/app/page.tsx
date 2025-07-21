@@ -6,6 +6,9 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import NotificationSettings from "@/components/NotificationSettings";
+import { useRealtimeNotifications } from '@/components/RealtimeNotificationProvider';
+
+const { unreadCount } = useRealtimeNotifications();
 
 export default function HomePage() {
   const { user, profile, isLoading: authLoading, isInitializing } = useAuth();
