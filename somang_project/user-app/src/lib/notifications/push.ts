@@ -82,16 +82,31 @@ export async function subscribeToPush(): Promise<PushSubscriptionData | null> {
  */
 export async function unsubscribeFromPush(): Promise<boolean> {
   try {
+    console.log('Getting service worker registration...');
     const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) return false;
+    
+    if (!registration) {
+      console.log('No service worker registration found');
+      return true; // 등록이 없으면 이미 해제된 것으로 간주
+    }
 
+    console.log('Getting push subscription...');
     const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) return false;
+    
+    if (!subscription) {
+      console.log('No push subscription found');
+      return true; // 구독이 없으면 이미 해제된 것으로 간주
+    }
 
-    return await subscription.unsubscribe();
+    console.log('Unsubscribing from push manager...');
+    const result = await subscription.unsubscribe();
+    console.log('Push manager unsubscribe result:', result);
+    
+    return result;
   } catch (error) {
     console.error('Push unsubscription failed:', error);
-    return false;
+    // 에러가 발생해도 true를 반환하여 서버 측 해제는 진행되도록 함
+    return true;
   }
 }
 
