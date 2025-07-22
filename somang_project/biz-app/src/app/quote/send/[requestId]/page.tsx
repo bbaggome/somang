@@ -358,19 +358,23 @@ export default function QuoteSendPage() {
 
       console.log("견적 생성 성공:", quoteData);
 
-      // ✨ 여기에 Push 알림 발송 로직 추가 ✨
+      // Push 알림 발송 (견적이 성공적으로 생성된 후)
       try {
-  await sendPushNotificationToUser(requestId, store.name, quoteDetails);
-  console.log('Push 알림 발송 성공');
-  
-  // 성공 메시지에 알림 발송 완료 포함
-  alert('견적서가 성공적으로 전송되었고, 고객에게 알림이 발송되었습니다!');
-} catch (notificationError) {
-  console.error('Push 알림 발송 실패:', notificationError);
-  // 알림 실패는 견적 전송 성공에 영향주지 않음
-  alert('견적서가 성공적으로 전송되었습니다!\n(알림 발송은 실패했을 수 있습니다)');
-}
+        await sendPushNotificationToUser(requestId, store.name, quoteDetails);
+        console.log("Push 알림 발송 성공");
 
+        alert(
+          "견적서가 성공적으로 전송되었고, 고객에게 알림이 발송되었습니다!"
+        );
+      } catch (notificationError) {
+        console.error("Push 알림 발송 실패:", notificationError);
+        // 알림 실패는 견적 전송 성공에 영향주지 않음
+        alert(
+          "견적서가 성공적으로 전송되었습니다!\n(알림 발송은 실패했을 수 있습니다)"
+        );
+      }
+
+      // 성공 후 리다이렉트
       alert("견적서가 성공적으로 전송되었습니다!");
       router.back();
     } catch (error: any) {

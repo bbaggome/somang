@@ -70,3 +70,28 @@ self.addEventListener('push', function(event) {
 
   event.waitUntil(promiseChain);
 });
+
+// Push 알림 클릭 핸들러 추가
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+
+  if (event.action === 'view' || !event.action) {
+    const urlToOpen = event.notification.data?.url || '/';
+    
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then(function(clientList) {
+        // 이미 열려있는 창이 있으면 포커스
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // 열려있는 창이 없으면 새 창 열기
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    );
+  }
+});
