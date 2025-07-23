@@ -22,8 +22,8 @@ export default function MobileQuoteStep4Page() {
     if (changeType && (changeType === 'device_only' || newCarrier)) {
       // Context에 데이터 저장
       updateQuoteData({ 
-        changeType: changeType as any,
-        newCarrier: changeType !== 'device_only' ? newCarrier as any : undefined
+        changeType: changeType,
+        newCarrier: changeType !== 'device_only' ? newCarrier : undefined
       });
       // URL 파라미터 없이 이동
       router.push('/quote/mobile/step5');

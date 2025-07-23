@@ -22,7 +22,7 @@ interface Device {
 
 export default function MobileQuoteStep6Page() {
   const router = useRouter();
-  const { quoteData, updateQuoteData } = useQuote();
+  const { updateQuoteData } = useQuote();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +42,7 @@ export default function MobileQuoteStep6Page() {
   // 필터링 로직
   useEffect(() => {
     filterDevices();
-  }, [devices, searchTerm, selectedFilter, selectedTag]);
+  }, [devices, searchTerm, selectedFilter, selectedTag, filterDevices]);
 
   const loadDevices = async () => {
     try {

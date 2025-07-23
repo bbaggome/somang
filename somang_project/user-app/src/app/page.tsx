@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import NotificationSettings from "@/components/NotificationSettings";
-import { useRealtimeNotifications } from '@/components/RealtimeNotificationProvider';
+import Link from "next/link";
 
 
 
@@ -171,7 +171,7 @@ export default function HomePage() {
 
           {/* 서비스 안내 */}
           <div className="space-y-4">
-            <a href="/quote/mobile/step1" className="block">
+            <Link href="/quote/mobile/step1" className="block">
               <div className="flex items-center space-x-3 p-6 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-colors cursor-pointer">
                 <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
                   <span className="text-blue-600 text-xl">📱</span>
@@ -186,10 +186,10 @@ export default function HomePage() {
                 </div>
                 <i className="fas fa-chevron-right text-blue-600"></i>
               </div>
-            </a>
+            </Link>
 
             {/* 견적 요청 내역 메뉴 추가 */}
-            <a href="/quote/requests" className="block">
+            <Link href="/quote/requests" className="block">
               <div className="flex items-center space-x-3 p-6 bg-purple-50 rounded-2xl hover:bg-purple-100 transition-colors cursor-pointer">
                 <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
                   <span className="text-purple-600 text-xl">📋</span>
@@ -204,7 +204,7 @@ export default function HomePage() {
                 </div>
                 <i className="fas fa-chevron-right text-purple-600"></i>
               </div>
-            </a>
+            </Link>
 
             {/* 알림 설정 섹션 추가 */}
             <section className="mt-8">

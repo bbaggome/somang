@@ -6,9 +6,54 @@ import { useRouter } from 'next/navigation';
 import { useQuote } from '@/context/QuoteContext';
 
 // Kakao Maps SDK의 타입 정의
+interface KakaoPlace {
+  place_name: string;
+  address_name: string;
+  road_address_name: string;
+  x: string;
+  y: string;
+  category_group_code?: string;
+  category_name?: string;
+  distance?: string;
+}
+
+interface KakaoAddressResult {
+  address: {
+    address_name: string;
+    region_1depth_name: string;
+    region_2depth_name: string;
+    region_3depth_name: string;
+  };
+  road_address?: {
+    address_name: string;
+  };
+}
+
 declare global {
   interface Window {
-    kakao: any;
+    kakao: {
+      maps: {
+        services: {
+          Geocoder: new () => {
+            coord2Address(
+              lng: number,
+              lat: number,
+              callback: (result: KakaoAddressResult[], status: string) => void
+            ): void;
+          };
+          Places: new () => {
+            keywordSearch(
+              keyword: string,
+              callback: (data: KakaoPlace[], status: string) => void,
+              options?: { radius?: number; x?: string; y?: string }
+            ): void;
+          };
+          Status: {
+            OK: string;
+          };
+        };
+      };
+    };
   }
 }
 
@@ -59,7 +104,7 @@ export default function LocationSearchPage() {
   };
 
   // 장소가 동네(행정구역)인지 판단하는 함수
-  const isNeighborhoodPlace = (place: any): boolean => {
+  const isNeighborhoodPlace = (place: KakaoPlace): boolean => {
     // 카테고리 그룹 코드가 행정구역 관련인지 확인
     if (place.category_group_code === 'AD5') return true; // 행정구역
     
@@ -171,7 +216,7 @@ export default function LocationSearchPage() {
         try {
           const geocoder = new window.kakao.maps.services.Geocoder();
 
-          geocoder.coord2Address(longitude, latitude, (result: any[], status: any) => {
+          geocoder.coord2Address(longitude, latitude, (result: KakaoAddressResult[], status: string) => {
             console.log('자동 Geocoding 결과:', status, result);
             
             if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
@@ -213,7 +258,7 @@ export default function LocationSearchPage() {
                   const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
                   console.log('자동 근처 지역 검색:', searchQuery);
                   
-                  ps.keywordSearch(searchQuery, (data: any[], catStatus: any) => {
+                  ps.keywordSearch(searchQuery, (data: KakaoPlace[], catStatus: string) => {
                     console.log('자동 근처 지역 검색 결과:', catStatus, data);
                     
                     if (catStatus === window.kakao.maps.services.Status.OK && data.length > 0) {
@@ -252,7 +297,7 @@ export default function LocationSearchPage() {
                         .slice(0, 9);
                       
                       console.log('자동 필터링된 근처 지역:', nearbyFormatted);
-                      setNearbyLocations(nearbyFormatted as any[]);
+                      setNearbyLocations(nearbyFormatted);
                     } else {
                       // 검색 결과가 없으면 빈 배열 설정
                       setNearbyLocations([]);
@@ -300,7 +345,7 @@ export default function LocationSearchPage() {
       const ps = new window.kakao.maps.services.Places();
       
       // 먼저 일반 키워드 검색
-      ps.keywordSearch(term, (data: any[], status: any) => {
+      ps.keywordSearch(term, (data: KakaoPlace[], status: string) => {
         if (status === window.kakao.maps.services.Status.OK) {
           const processedResults = data
             .filter(place => {
@@ -343,7 +388,7 @@ export default function LocationSearchPage() {
           if (processedResults.length < 5 && term.length >= 2) {
             // "동" 키워드를 추가해서 재검색
             const dongSearchTerm = term.includes('동') ? term : `${term}동`;
-            ps.keywordSearch(dongSearchTerm, (dongData: any[], dongStatus: any) => {
+            ps.keywordSearch(dongSearchTerm, (dongData: KakaoPlace[], dongStatus: string) => {
               if (dongStatus === window.kakao.maps.services.Status.OK) {
                 const additionalResults = dongData
                   .filter(place => isNeighborhoodPlace(place))
@@ -451,7 +496,7 @@ export default function LocationSearchPage() {
         try {
           const geocoder = new window.kakao.maps.services.Geocoder();
 
-          geocoder.coord2Address(longitude, latitude, (result: any[], status: any) => {
+          geocoder.coord2Address(longitude, latitude, (result: KakaoAddressResult[], status: string) => {
             console.log('수동 Geocoding 결과:', status, result);
             
             if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
@@ -493,7 +538,7 @@ export default function LocationSearchPage() {
                   const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
                   console.log('수동 근처 지역 검색:', searchQuery);
                   
-                  ps.keywordSearch(searchQuery, (data: any[], catStatus: any) => {
+                  ps.keywordSearch(searchQuery, (data: KakaoPlace[], catStatus: string) => {
                     console.log('수동 근처 지역 검색 결과:', catStatus, data);
                     
                     if (catStatus === window.kakao.maps.services.Status.OK && data.length > 0) {
@@ -532,7 +577,7 @@ export default function LocationSearchPage() {
                         .slice(0, 9);
                       
                       console.log('수동 필터링된 근처 지역:', nearbyFormatted);
-                      setNearbyLocations(nearbyFormatted as any[]);
+                      setNearbyLocations(nearbyFormatted);
                     } else {
                       // 검색 결과가 없으면 빈 배열 설정
                       setNearbyLocations([]);

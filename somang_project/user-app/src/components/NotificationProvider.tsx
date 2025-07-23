@@ -9,7 +9,6 @@ import {
   requestNotificationPermission,
   subscribeToPush,
   unsubscribeFromPush,
-  getCurrentSubscription,
 } from '@/lib/notifications/push';
 
 interface NotificationContextType {
@@ -37,7 +36,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setPermission(Notification.permission);
       checkSubscriptionStatus();
     }
-  }, [isSupported, user]);
+  }, [isSupported, user, checkSubscriptionStatus]);
 
   // 구독 상태 확인 (user_id로만 확인)
   const checkSubscriptionStatus = useCallback(async () => {

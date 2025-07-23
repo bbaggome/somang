@@ -21,8 +21,8 @@ export default function MobileQuoteStep2Page() {
     if (purchaseTarget && age) {
       // Context에 데이터 저장
       updateQuoteData({ 
-        purchaseTarget: purchaseTarget as any, 
-        age: age as any 
+        purchaseTarget: purchaseTarget, 
+        age: age 
       });
       // URL 파라미터 없이 이동
       router.push('/quote/mobile/step3');

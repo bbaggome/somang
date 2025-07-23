@@ -151,7 +151,7 @@ export default function QuoteRequestsPage() {
         console.log('견적 요청 목록 로드 완료');
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('견적 요청 목록 로드 실패:', error);
       if (mounted.current) {
         setError('견적 요청 목록을 불러오는 중 오류가 발생했습니다.');
@@ -192,7 +192,7 @@ export default function QuoteRequestsPage() {
 
       // 함수 결과를 컴포넌트에서 사용할 형태로 변환
       const transformedQuotes = await Promise.all(
-        (quotesData || []).map(async (quote: any) => {
+        (quotesData || []).map(async (quote: Quote) => {
           try {
             // 디바이스 정보 로드
             let deviceData = null;
@@ -248,7 +248,7 @@ export default function QuoteRequestsPage() {
         console.log('모든 견적 로드 완료:', transformedQuotes.length, '건');
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('모든 견적 로드 실패:', error);
       if (mounted.current) {
         setError('견적을 불러오는 중 오류가 발생했습니다.');
@@ -284,7 +284,7 @@ export default function QuoteRequestsPage() {
       const actionText = action === 'accepted' ? '수락' : '거절';
       alert(`견적을 ${actionText}했습니다.`);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('견적 상태 업데이트 실패:', error);
       alert('견적 상태 변경 중 오류가 발생했습니다.');
     }

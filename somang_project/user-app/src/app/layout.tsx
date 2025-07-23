@@ -6,6 +6,9 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { NotificationProvider } from "@/components/NotificationProvider";
 import { RealtimeNotificationProvider } from "@/components/RealtimeNotificationProvider"; // 추가
 import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
+import MobileWrapper from "./mobile-wrapper";
+import MobilePushHandler from "@/components/MobilePushHandler";
+import DeepLinkHandler from "@/components/DeepLinkHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,14 +45,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <NotificationProvider>
-            <RealtimeNotificationProvider> {/* 실시간 알림 추가 */}
-              {children}
-              <NotificationPermissionPrompt />
-            </RealtimeNotificationProvider>
-          </NotificationProvider>
-        </AuthProvider>
+        <MobileWrapper>
+          <AuthProvider>
+            <NotificationProvider>
+              <RealtimeNotificationProvider> {/* 실시간 알림 추가 */}
+                {children}
+                <NotificationPermissionPrompt />
+                <MobilePushHandler />
+                <DeepLinkHandler />
+              </RealtimeNotificationProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </MobileWrapper>
       </body>
     </html>
   );

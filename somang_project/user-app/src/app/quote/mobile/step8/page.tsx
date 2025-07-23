@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuote } from '@/context/QuoteContext';
 import { supabase } from '@/lib/supabase/client';
 import type { QuoteRequestDetails } from '@/types/quote';
+import type { Device } from '@/types';
 
 export default function MobileQuoteStep8Page() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function MobileQuoteStep8Page() {
   const { quoteData, resetQuoteData } = useQuote();
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [deviceInfo, setDeviceInfo] = useState<any>(null);
+  const [deviceInfo, setDeviceInfo] = useState<Device | null>(null);
   const hasCheckedData = useRef(false); // 데이터 검증을 한 번만 실행하기 위한 ref
 
   // Context에서 데이터 가져오기
@@ -66,7 +67,7 @@ export default function MobileQuoteStep8Page() {
       resetQuoteData();
       router.replace('/quote/mobile/step1');
     }
-  }, []); // 빈 배열로 한 번만 실행
+  }, [quoteData, requestData, resetQuoteData, router]); // 의존성 추가
 
   // 디바이스 정보 로드
   useEffect(() => {
@@ -129,17 +130,18 @@ export default function MobileQuoteStep8Page() {
       // 성공 시 Context 데이터 초기화
       resetQuoteData();
       setShowConfirmModal(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error('견적 요청 실패:', error);
       
       // 에러 타입별로 다른 메시지 표시
       let errorMessage = '견적 요청 중 오류가 발생했습니다.';
       
-      if (error.code === '42501') {
+      const errorWithCode = error as Error & { code?: string };
+      if (errorWithCode.code === '42501') {
         errorMessage = '권한이 없습니다. 로그인 상태를 확인해주세요.';
-      } else if (error.code === '23503') {
+      } else if (errorWithCode.code === '23503') {
         errorMessage = '사용자 정보를 찾을 수 없습니다.';
-      } else if (error.message) {
+      } else if (error instanceof Error && error.message) {
         errorMessage = `오류: ${error.message}`;
       }
       

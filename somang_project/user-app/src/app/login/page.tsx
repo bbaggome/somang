@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import KakaoIcon from '@/components/KakaoIcon';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
@@ -117,19 +117,23 @@ export default function LoginPage() {
       setIsLoggingIn(true);
       setError(null);
 
+      // 모바일에서도 HTTPS URL 사용 (Deep Link는 별도 처리)
+      const redirectTo = `https://bbxycbghbatcovzuiotu.supabase.co/auth/v1/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: redirectTo,
         },
       });
 
       if (error) {
         throw error;
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('카카오 로그인 실패:', err);
-      setError(err.message || '로그인 중 오류가 발생했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.';
+      setError(errorMessage);
       setIsLoggingIn(false);
     }
   };
@@ -288,5 +292,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <LoadingOverlay isVisible={true} message="로딩 중..." />
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }

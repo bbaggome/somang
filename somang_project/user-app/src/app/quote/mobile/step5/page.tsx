@@ -18,7 +18,7 @@ export default function MobileQuoteStep5Page() {
   const handleNext = () => {
     if (dataUsage) {
       // Context에 데이터 저장
-      updateQuoteData({ dataUsage: dataUsage as any });
+      updateQuoteData({ dataUsage: dataUsage });
       // URL 파라미터 없이 이동
       router.push('/quote/mobile/step6');
     }

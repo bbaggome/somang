@@ -18,7 +18,7 @@ export default function MobileQuoteStep3Page() {
   const handleNext = () => {
     if (carrier) {
       // Context에 데이터 저장
-      updateQuoteData({ currentCarrier: carrier as any });
+      updateQuoteData({ currentCarrier: carrier });
       // URL 파라미터 없이 이동
       router.push('/quote/mobile/step4');
     }

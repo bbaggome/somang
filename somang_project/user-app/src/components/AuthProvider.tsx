@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { generateRandomNickname } from '@/lib/utils/nickname';
 import type { Profile, AuthContextType } from '@/types/auth';
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 세션 처리 함수
-  const handleSession = useCallback(async (session: any, isInitial = false) => {
+  const handleSession = useCallback(async (session: Session | null, isInitial = false) => {
     if (!mounted.current) return;
 
     const currentUser = session?.user ?? null;

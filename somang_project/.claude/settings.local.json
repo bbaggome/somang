@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run export:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx cap:*)",
+      "Bash(.gradlew.bat assembleDebug)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)",
+      "Bash(./gradlew:*)",
+      "Bash(mv:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(true)",
+      "Bash(npm run:*)",
+      "Bash(timeout 20 npm run dev)",
+      "Bash(.gradlew:*)",
+      "Bash(gradle:*)",
+      "Bash(rmdir:*)",
+      "Bash(rm:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
