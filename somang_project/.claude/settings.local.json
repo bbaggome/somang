@@ -19,7 +19,11 @@
       "Bash(gradle:*)",
       "Bash(rmdir:*)",
       "Bash(rm:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx next dev:*)",
+      "Bash(docker-compose:*)",
+      "Bash(.\\gradlew assembleDebug)",
+      "Bash(netsh:*)"
     ],
     "deny": []
   }

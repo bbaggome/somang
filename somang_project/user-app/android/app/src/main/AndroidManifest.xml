@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep Link for OAuth redirect -->
+            <!-- Deep Link for OAuth redirect (HTTPS) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -30,6 +30,14 @@
                 <data android:scheme="https"
                       android:host="bbxycbghbatcovzuiotu.supabase.co"
                       android:path="/auth/v1/callback" />
+            </intent-filter>
+
+            <!-- Custom URL Scheme for mobile redirect -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.tbridge.userapp" />
             </intent-filter>
 
         </activity>

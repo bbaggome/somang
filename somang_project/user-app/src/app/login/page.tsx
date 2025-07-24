@@ -117,8 +117,39 @@ function LoginPageContent() {
       setIsLoggingIn(true);
       setError(null);
 
-      // 모바일에서도 HTTPS URL 사용 (Deep Link는 별도 처리)
-      const redirectTo = `https://bbxycbghbatcovzuiotu.supabase.co/auth/v1/callback`;
+      // 플랫폼 감지 및 적절한 리디렉션 URL 설정
+      let redirectTo: string;
+      
+      // 웹 환경에서는 항상 현재 도메인의 로그인 페이지로 리디렉션
+      if (typeof window !== 'undefined') {
+        // Capacitor 존재 여부를 안전하게 확인
+        let isNativePlatform = false;
+        
+        try {
+          const globalWindow = window as unknown as Record<string, unknown>;
+          const capacitor = globalWindow.Capacitor as { isNativePlatform?: () => boolean } | undefined;
+          
+          if (capacitor && typeof capacitor.isNativePlatform === 'function') {
+            isNativePlatform = capacitor.isNativePlatform();
+          }
+        } catch {
+          // Capacitor가 없거나 오류 발생시 웹 환경으로 간주
+          isNativePlatform = false;
+        }
+        
+        if (!isNativePlatform) {
+          // 웹 환경: 현재 도메인으로 리디렉션
+          redirectTo = `${window.location.origin}/login`;
+          console.log('웹 환경 감지, 웹 리디렉션 사용:', redirectTo);
+        } else {
+          // 모바일 앱 환경: Supabase 콜백 URL 사용 (Deep Link 처리됨)
+          redirectTo = `https://bbxycbghbatcovzuiotu.supabase.co/auth/v1/callback`;
+          console.log('모바일 앱 환경 감지, 콜백 URL 사용:', redirectTo);
+        }
+      } else {
+        // 서버 사이드 렌더링 환경: 기본값
+        redirectTo = `https://bbxycbghbatcovzuiotu.supabase.co/auth/v1/callback`;
+      }
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',

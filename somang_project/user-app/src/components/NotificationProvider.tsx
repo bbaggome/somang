@@ -30,14 +30,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 초기 상태 확인
-  useEffect(() => {
-    if (isSupported) {
-      setPermission(Notification.permission);
-      checkSubscriptionStatus();
-    }
-  }, [isSupported, user, checkSubscriptionStatus]);
-
   // 구독 상태 확인 (user_id로만 확인)
   const checkSubscriptionStatus = useCallback(async () => {
     if (!user || !isSupported) return;
@@ -65,6 +57,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setIsLoading(false);
     }
   }, [user, isSupported]);
+
+  // 초기 상태 확인
+  useEffect(() => {
+    if (isSupported) {
+      setPermission(Notification.permission);
+      checkSubscriptionStatus();
+    }
+  }, [isSupported, user, checkSubscriptionStatus]);
 
   // 권한 요청
   const requestPermission = useCallback(async (): Promise<boolean> => {
