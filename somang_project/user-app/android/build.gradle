@@ -24,11 +24,11 @@ allprojects {
     }
 }
 
-// Force Java 17 for all subprojects
+// Force Java 21 for all subprojects
 subprojects {
     tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 

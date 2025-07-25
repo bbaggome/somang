@@ -69,36 +69,53 @@ export default function NotificationToast() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+    <div className="fixed top-4 right-4 z-50 space-y-3 max-w-sm">
       {visibleNotificationObjects.map((notification) => (
         <div
           key={notification.id}
-          className="bg-white rounded-lg shadow-lg p-4 cursor-pointer transform transition-all duration-300 hover:scale-105 animate-slide-in-right"
+          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-xl p-4 cursor-pointer transform transition-all duration-300 hover:scale-105 animate-slide-in-right border-l-4 border-orange-400"
           onClick={() => handleNotificationClick(notification)}
         >
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">
-                새로운 견적이 도착했습니다!
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {notification.message}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                {new Date(notification.created_at).toLocaleTimeString('ko-KR')}
-              </p>
+            <div className="flex items-start space-x-3 flex-1">
+              {/* 알림 아이콘 */}
+              <div className="flex-shrink-0 w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                </svg>
+              </div>
+              
+              <div className="flex-1">
+                <p className="font-bold text-white text-sm">
+                  💰 새로운 견적 도착!
+                </p>
+                <p className="text-blue-100 text-sm mt-1 leading-relaxed">
+                  {notification.message}
+                </p>
+                <p className="text-blue-200 text-xs mt-2">
+                  {new Date(notification.created_at).toLocaleTimeString('ko-KR')} • 클릭하여 확인
+                </p>
+              </div>
             </div>
+            
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleDismiss(notification.id);
               }}
-              className="ml-4 text-gray-400 hover:text-gray-600"
+              className="ml-2 text-blue-200 hover:text-white transition-colors flex-shrink-0"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
+          </div>
+          
+          {/* 진행바 애니메이션 */}
+          <div className="mt-3">
+            <div className="w-full bg-blue-400 bg-opacity-30 rounded-full h-1">
+              <div className="bg-white h-1 rounded-full animate-progress" style={{animationDuration: '10s'}}></div>
+            </div>
           </div>
         </div>
       ))}
@@ -115,8 +132,21 @@ export default function NotificationToast() {
           }
         }
         
+        @keyframes progress {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+        
         .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out;
+          animation: slide-in-right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .animate-progress {
+          animation: progress linear;
         }
       `}</style>
     </div>

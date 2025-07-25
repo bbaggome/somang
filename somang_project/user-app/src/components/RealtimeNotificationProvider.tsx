@@ -50,6 +50,7 @@ interface RealtimeNotificationContextType {
   unreadCount: number;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
+  clearNotification: (notificationId: string) => void;
   clearAll: () => void;
 }
 
@@ -237,6 +238,11 @@ export const RealtimeNotificationProvider = ({
     );
   }, []);
 
+  // 특정 알림 지우기
+  const clearNotification = useCallback((notificationId: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+  }, []);
+
   // 모든 알림 지우기
   const clearAll = useCallback(() => {
     setNotifications([]);
@@ -275,7 +281,7 @@ export const RealtimeNotificationProvider = ({
         const notificationData = event.data.payload;
         console.log('🔔 Showing notification from SW:', notificationData);
         
-        // 메인 스레드에서 알림 표시
+        // 메인 스레드에서 시스템 알림 표시
         if ('Notification' in window && Notification.permission === 'granted') {
           const notification = new Notification(notificationData.title, {
             body: notificationData.body,
@@ -296,6 +302,23 @@ export const RealtimeNotificationProvider = ({
           setTimeout(() => {
             notification.close();
           }, 5000);
+        }
+
+        // 웹 페이지 내 알림도 추가
+        const webNotification: RealtimeNotification = {
+          id: `sw_${Date.now()}`,
+          type: "quote",
+          title: notificationData.title,
+          message: notificationData.body,
+          data: {
+            requestId: notificationData.data?.quoteId || notificationData.data?.url?.match(/\/([^\/]+)$/)?.[1],
+          },
+          read: false,
+          created_at: new Date().toISOString(),
+        };
+
+        if (mounted.current) {
+          setNotifications((prev) => [webNotification, ...prev]);
         }
       }
     };
@@ -322,6 +345,7 @@ export const RealtimeNotificationProvider = ({
     unreadCount,
     markAsRead,
     markAllAsRead,
+    clearNotification,
     clearAll,
   };
 
