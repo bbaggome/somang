@@ -9,6 +9,7 @@ import NotificationPermissionPrompt from "@/components/NotificationPermissionPro
 import MobileWrapper from "./mobile-wrapper";
 import MobilePushHandler from "@/components/MobilePushHandler";
 import DeepLinkHandler from "@/components/DeepLinkHandler";
+import NotificationToast from "@/components/NotificationToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +54,7 @@ export default function RootLayout({
                 <NotificationPermissionPrompt />
                 <MobilePushHandler />
                 <DeepLinkHandler />
+                <NotificationToast />
               </RealtimeNotificationProvider>
             </NotificationProvider>
           </AuthProvider>

@@ -63,6 +63,42 @@ interface Quote {
   };
 }
 
+// Database function return type
+interface QuoteDatabaseResult {
+  quote_id: string;
+  quote_created_at: string;
+  quote_status: 'sent' | 'viewed' | 'accepted' | 'rejected';
+  request_id: string;
+  quote_details: {
+    device_price: number;
+    monthly_fee: number;
+    tco_24months: number;
+    special_benefits: string[];
+    installation_method: string;
+    store_memo: string;
+    contract_period: number;
+    device_discount: number;
+    plan_discount: number;
+    additional_discount: number;
+    activation_fee: number;
+    delivery_fee: number;
+  };
+  store_name: string;
+  store_phone_number: string;
+  store_base_address: string;
+  request_details: {
+    purchaseTarget: string;
+    age: string;
+    currentCarrier: string;
+    changeType: string;
+    newCarrier?: string;
+    dataUsage: string;
+    deviceId: string;
+    color: string;
+    locations: string[];
+  };
+}
+
 export default function QuoteRequestsPage() {
   const { user, isLoading: authLoading, isInitializing } = useAuth();
   const router = useRouter();
@@ -192,7 +228,7 @@ export default function QuoteRequestsPage() {
 
       // 함수 결과를 컴포넌트에서 사용할 형태로 변환
       const transformedQuotes = await Promise.all(
-        (quotesData || []).map(async (quote: Quote) => {
+        (quotesData || []).map(async (quote: QuoteDatabaseResult) => {
           try {
             // 디바이스 정보 로드
             let deviceData = null;

@@ -23,7 +23,10 @@
       "Bash(npx next dev:*)",
       "Bash(docker-compose:*)",
       "Bash(.\\gradlew assembleDebug)",
-      "Bash(netsh:*)"
+      "Bash(netsh:*)",
+      "Bash(grep:*)",
+      "Bash(supabase status:*)",
+      "Bash(supabase secrets:*)"
     ],
     "deny": []
   }

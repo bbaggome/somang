@@ -2,7 +2,8 @@
 // Service Worker 파일
 
 self.addEventListener('push', function(event) {
-  console.log('Push event received:', event);
+  console.log('🔔 Push event received:', event);
+  console.log('🔔 Push data:', event.data ? event.data.text() : 'No data');
 
   let notificationData = {
     title: '새로운 알림',
@@ -17,55 +18,68 @@ self.addEventListener('push', function(event) {
 
   if (event.data) {
     try {
+      // JSON 파싱 시도
       const payload = event.data.json();
       notificationData = {
         ...notificationData,
         ...payload
       };
     } catch (e) {
-      console.error('Failed to parse push payload:', e);
+      // JSON 파싱 실패 시 텍스트로 처리 (개발자 도구 테스트용)
+      try {
+        const textPayload = event.data.text();
+        notificationData = {
+          ...notificationData,
+          title: 'T-BRIDGE',
+          body: textPayload
+        };
+      } catch (textError) {
+        console.error('Failed to parse push payload as JSON or text:', e, textError);
+      }
     }
   }
 
-  // 앱이 열려있으면 앱으로 메시지 전송
+  // 앱이 열려있으면 앱으로 메시지 전송하여 메인 스레드에서 알림 표시
   const promiseChain = self.clients.matchAll({ type: 'window' }).then(clients => {
     if (clients.length > 0) {
-      // 앱이 열려있으면 앱 내 알림 처리
+      // 앱이 열려있으면 메인 스레드에서 알림 표시
       clients.forEach(client => {
         client.postMessage({
-          type: 'push-received',
+          type: 'show-notification',
           payload: notificationData
         });
       });
-      
-      // 앱이 포그라운드에 있으면 브라우저 알림은 표시하지 않음
-      if (clients.some(client => client.focused)) {
-        return Promise.resolve();
-      }
+      console.log('🔔 Notification message sent to main thread');
+      return Promise.resolve();
+    } else {
+      // 앱이 닫혀있으면 Service Worker에서 알림 표시
+      console.log('🔔 App not open, showing SW notification:', notificationData);
+      return self.registration.showNotification(
+        notificationData.title,
+        {
+          body: notificationData.body,
+          icon: notificationData.icon,
+          badge: notificationData.badge,
+          tag: notificationData.tag,
+          data: notificationData.data,
+          requireInteraction: true,
+          actions: [
+            {
+              action: 'view',
+              title: '확인하기'
+            },
+            {
+              action: 'close',
+              title: '닫기'
+            }
+          ]
+        }
+      ).then(() => {
+        console.log('🔔 SW Notification displayed successfully');
+      }).catch(error => {
+        console.error('🔔 Failed to show SW notification:', error);
+      });
     }
-    
-    // 앱이 백그라운드에 있거나 닫혀있으면 브라우저 알림 표시
-    return self.registration.showNotification(
-      notificationData.title,
-      {
-        body: notificationData.body,
-        icon: notificationData.icon,
-        badge: notificationData.badge,
-        tag: notificationData.tag,
-        data: notificationData.data,
-        requireInteraction: true,
-        actions: [
-          {
-            action: 'view',
-            title: '확인하기'
-          },
-          {
-            action: 'close',
-            title: '닫기'
-          }
-        ]
-      }
-    );
   });
 
   event.waitUntil(promiseChain);

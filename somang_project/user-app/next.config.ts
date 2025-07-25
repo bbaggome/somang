@@ -3,7 +3,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // output: 'export', // 동적 라우트를 위해 주석 처리
   trailingSlash: true,
   images: {
     unoptimized: true,

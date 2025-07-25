@@ -81,34 +81,9 @@ export const RealtimeNotificationProvider = ({
   const showInAppNotification = useCallback(
     (notification: RealtimeNotification) => {
       console.log("새 알림:", notification);
-
-      // 페이지가 백그라운드에 있을 때만 브라우저 알림 표시
-      if (
-        document.hidden &&
-        "Notification" in window &&
-        Notification.permission === "granted"
-      ) {
-        const browserNotification = new Notification(notification.title, {
-          body: notification.message,
-          icon: "/icon-192x192.png",
-          badge: "/badge-72x72.png",
-          tag: "quote_notification",
-          data: notification.data,
-        });
-
-        browserNotification.onclick = () => {
-          window.focus();
-          if (notification.type === "quote" && notification.data?.requestId) {
-            window.location.href = `/quote/requests/${notification.data.requestId}`;
-          }
-          browserNotification.close();
-        };
-
-        // 5초 후 자동 닫기
-        setTimeout(() => {
-          browserNotification.close();
-        }, 5000);
-      }
+      
+      // Service Worker가 푸시 알림을 처리하므로 여기서는 브라우저 알림을 표시하지 않음
+      // NotificationToast 컴포넌트가 화면에 알림을 표시함
     },
     []
   );
@@ -117,6 +92,8 @@ export const RealtimeNotificationProvider = ({
   const handleNewQuote = useCallback(
     async (newQuote: Quote) => {
       if (!user || !mounted.current) return;
+
+      console.log('🔔 새 견적 수신:', newQuote);
 
       try {
         // 매장 정보 가져오기
@@ -288,13 +265,54 @@ export const RealtimeNotificationProvider = ({
     };
   }, [user, setupRealtimeSubscription]);
 
-  // 컴포넌트 언마운트 시 정리
+  // 컴포넌트 언마운트 시 정리 및 Service Worker 메시지 리스너 설정
   useEffect(() => {
     mounted.current = true;
+    
+    // Service Worker 메시지 리스너 추가
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'show-notification') {
+        const notificationData = event.data.payload;
+        console.log('🔔 Showing notification from SW:', notificationData);
+        
+        // 메인 스레드에서 알림 표시
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const notification = new Notification(notificationData.title, {
+            body: notificationData.body,
+            icon: notificationData.icon,
+            tag: notificationData.tag,
+            data: notificationData.data
+          });
+
+          notification.onclick = () => {
+            window.focus();
+            if (notificationData.data?.url) {
+              window.location.href = notificationData.data.url;
+            }
+            notification.close();
+          };
+
+          // 5초 후 자동 닫기
+          setTimeout(() => {
+            notification.close();
+          }, 5000);
+        }
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+    
     return () => {
       mounted.current = false;
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      
+      // Service Worker 리스너 제거
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
       }
     };
   }, []);
