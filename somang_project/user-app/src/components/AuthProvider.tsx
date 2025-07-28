@@ -151,52 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchProfile]);
 
-  // 앱 복귀 시 세션 새로고침 처리 (Capacitor App 플러그인 사용)
+  // 앱 복귀 시 세션 새로고침 처리 (웹 환경용)
   useEffect(() => {
-    let isCapacitorApp = false;
-    
-    // Capacitor 환경인지 확인
-    const checkCapacitor = async () => {
-      try {
-        const { Capacitor } = await import('@capacitor/core');
-        isCapacitorApp = Capacitor.isNativePlatform();
-        
-        if (isCapacitorApp) {
-          console.log('Capacitor 네이티브 앱 환경 감지됨');
-          
-          // Capacitor App 플러그인으로 앱 상태 변화 감지
-          const { App } = await import('@capacitor/app');
-          
-          const handleAppStateChange = async (state: any) => {
-            console.log('앱 상태 변화:', state);
-            if (state.isActive) {
-              console.log('앱이 활성화됨 - 세션 새로고침 시도');
-              try {
-                // 잠깐 대기 후 세션 확인 (브라우저에서 돌아온 직후 시간 필요)
-                setTimeout(async () => {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  console.log('앱 복귀 후 세션 확인:', session?.user?.email || 'null');
-                  await handleSession(session, false);
-                }, 1000);
-              } catch (error) {
-                console.error('앱 복귀 후 세션 확인 실패:', error);
-              }
-            }
-          };
-          
-          App.addListener('appStateChange', handleAppStateChange);
-          
-          // 정리 함수에서 리스너 제거
-          return () => {
-            App.removeAllListeners();
-          };
-        }
-      } catch (error) {
-        console.log('Capacitor 플러그인 로드 실패 (웹 환경):', error);
-      }
-    };
-    
-    // 커스텀 이벤트도 유지 (웹 환경 대응)
+    // 커스텀 이벤트로 앱 복귀 감지 (웹 환경 대응)
     const handleAppResumed = async (event: CustomEvent) => {
       if (event.detail?.authSuccess) {
         console.log('커스텀 이벤트로 앱 복귀 감지');
@@ -211,13 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('app-resumed', handleAppResumed as EventListener);
     
-    const cleanup = checkCapacitor();
-    
     return () => {
       window.removeEventListener('app-resumed', handleAppResumed as EventListener);
-      if (cleanup instanceof Promise) {
-        cleanup.then(cleanupFn => cleanupFn && cleanupFn());
-      }
     };
   }, [handleSession]);
 

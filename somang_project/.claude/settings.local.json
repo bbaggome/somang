@@ -28,7 +28,8 @@
       "Bash(supabase status:*)",
       "Bash(supabase secrets:*)",
       "Bash(java:*)",
-      "Bash(ipconfig)"
+      "Bash(ipconfig)",
+      "Bash(pnpm install:*)"
     ],
     "deny": []
   }
