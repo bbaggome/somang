@@ -358,24 +358,11 @@ export default function QuoteSendPage() {
 
       console.log("견적 생성 성공:", quoteData);
 
-      // Push 알림 발송 (견적이 성공적으로 생성된 후)
-      try {
-        await sendPushNotificationToUser(requestId, store.name, quoteDetails);
-        console.log("Push 알림 발송 성공");
-
-        alert(
-          "견적서가 성공적으로 전송되었고, 고객에게 알림이 발송되었습니다!"
-        );
-      } catch (notificationError) {
-        console.error("Push 알림 발송 실패:", notificationError);
-        // 알림 실패는 견적 전송 성공에 영향주지 않음
-        alert(
-          "견적서가 성공적으로 전송되었습니다!\n(알림 발송은 실패했을 수 있습니다)"
-        );
-      }
-
-      // 성공 후 리다이렉트
+      console.log("견적 전송 완료 - Supabase Realtime을 통해 자동으로 알림이 전송됩니다");
+      
       alert("견적서가 성공적으로 전송되었습니다!");
+      
+      // 성공 후 리다이렉트
       router.back();
     } catch (error: any) {
       console.error("견적 전송 실패:", error);
@@ -385,104 +372,6 @@ export default function QuoteSendPage() {
     }
   };
 
-  // Push 알림 발송 함수
-  async function sendPushNotificationToUser(
-    requestId: string,
-    storeName: string,
-    quoteDetails: any
-  ) {
-    try {
-      // 견적 요청의 사용자 정보 조회
-      const { data: requestData, error: requestError } = await supabase
-        .from("quote_requests")
-        .select("user_id, request_details")
-        .eq("id", requestId)
-        .single();
-
-      if (requestError || !requestData) {
-        console.error("견적 요청 정보 조회 실패:", requestError);
-        return;
-      }
-
-      // 사용자의 Push 구독 정보 조회
-      const { data: subscriptions, error: subscriptionError } = await supabase
-        .from("user_push_subscriptions")
-        .select("*")
-        .eq("user_id", requestData.user_id)
-        .eq("is_active", true);
-
-      if (subscriptionError) {
-        console.error("구독 정보 조회 실패:", subscriptionError);
-        return;
-      }
-
-      if (!subscriptions || subscriptions.length === 0) {
-        console.log("사용자의 활성 Push 구독이 없습니다.");
-        return;
-      }
-
-      // 디바이스 정보 조회 (알림 메시지에 포함하기 위해)
-      let deviceName = "휴대폰";
-      if (requestData.request_details?.deviceId) {
-        const { data: deviceData } = await supabase
-          .from("devices")
-          .select("device_name")
-          .eq("id", requestData.request_details.deviceId)
-          .single();
-
-        if (deviceData) {
-          deviceName = deviceData.device_name;
-        }
-      }
-
-      // 알림 페이로드 생성
-      const notificationPayload = {
-        title: "💰 새로운 견적이 도착했어요!",
-        body: `${storeName}에서 ${deviceName} 견적을 보냈습니다. 총 ${formatCurrency(
-          quoteDetails.tco_24months
-        )}원`,
-        icon: "/icon-192x192.png",
-        badge: "/badge-72x72.png",
-        tag: `quote-${requestId}`,
-        data: {
-          url: `/quote/requests/${requestId}`,
-          quoteId: requestId,
-          storeName: storeName,
-          totalCost: quoteDetails.tco_24months,
-        },
-        requireInteraction: true,
-        actions: [
-          {
-            action: "view",
-            title: "견적 확인하기",
-          },
-          {
-            action: "close",
-            title: "나중에",
-          },
-        ],
-      };
-
-      // 서버 사이드에서 Push 알림 발송 (Edge Function 호출)
-      const { error: pushError } = await supabase.functions.invoke(
-        "send-push-notification",
-        {
-          body: {
-            subscriptions: subscriptions,
-            payload: notificationPayload,
-          },
-        }
-      );
-
-      if (pushError) {
-        console.error("Push 알림 발송 실패:", pushError);
-      } else {
-        console.log("Push 알림 발송 성공");
-      }
-    } catch (error) {
-      console.error("Push 알림 발송 중 오류:", error);
-    }
-  }
 
   if (loading) {
     return (

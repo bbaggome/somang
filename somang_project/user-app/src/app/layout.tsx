@@ -6,7 +6,6 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { NotificationProvider } from "@/components/NotificationProvider";
 import { RealtimeNotificationProvider } from "@/components/RealtimeNotificationProvider"; // 추가
 import NotificationPermissionPrompt from "@/components/NotificationPermissionPrompt";
-import MobileWrapper from "./mobile-wrapper";
 import NotificationToast from "@/components/NotificationToast";
 
 const geistSans = Geist({
@@ -24,13 +23,11 @@ export const metadata: Metadata = {
   description: "가장 투명한 통신 견적 비교",
   keywords: ["통신", "견적", "비교", "T-BRIDGE"],
   authors: [{ name: "T-BRIDGE Team" }],
-  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
@@ -44,17 +41,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <MobileWrapper>
-          <AuthProvider>
-            <NotificationProvider>
-              <RealtimeNotificationProvider> {/* 실시간 알림 추가 */}
-                {children}
-                <NotificationPermissionPrompt />
-                <NotificationToast />
-              </RealtimeNotificationProvider>
-            </NotificationProvider>
-          </AuthProvider>
-        </MobileWrapper>
+        <AuthProvider>
+          <NotificationProvider>
+            <RealtimeNotificationProvider> {/* 실시간 알림 추가 */}
+              {children}
+              <NotificationPermissionPrompt />
+              <NotificationToast />
+            </RealtimeNotificationProvider>
+          </NotificationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

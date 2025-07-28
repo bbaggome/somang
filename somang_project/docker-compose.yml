@@ -6,13 +6,16 @@ services:
       context: ./user-app
       dockerfile: Dockerfile.dev
     ports:
-      - "50331:50331"  # 컨테이너 내부 포트 3000을 호스트 50331에 매핑
+      - "50331:50331"  # HTTP 포트
+      - "50443:50443"  # HTTPS 포트
     volumes:
       - ./user-app:/app
       - /app/node_modules
       - /app/.next
     environment:
       - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50443
     profiles:
       - "dev"
     networks:

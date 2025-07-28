@@ -4,12 +4,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
-import {
-  isPushSupported,
-  requestNotificationPermission,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from '@/lib/notifications/push';
+// Service Worker 기반 Push 알림 대신 기본 브라우저 알림만 사용
 
 interface NotificationContextType {
   isSupported: boolean;
@@ -25,58 +20,52 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [isSupported] = useState(isPushSupported());
+  const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 구독 상태 확인 (user_id로만 확인)
-  const checkSubscriptionStatus = useCallback(async () => {
-    if (!user || !isSupported) return;
-    
-    setIsLoading(true);
-    try {
-      // user_id로 구독 정보 조회 (is_active가 true인 것만)
-      const { data, error } = await supabase
-        .from('user_push_subscriptions')
-        .select('id, is_active, endpoint')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      console.log('구독 상태 확인:', { 
-        hasActiveSubscription: !!data, 
-        error 
-      });
-      
-      setIsSubscribed(!!data && !error);
-    } catch (error) {
-      console.error('Failed to check subscription status:', error);
-      setIsSubscribed(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, isSupported]);
-
-  // 초기 상태 확인
+  // 기본 브라우저 알림 지원 (서비스 워커 없이)
   useEffect(() => {
-    if (isSupported) {
-      setPermission(Notification.permission);
-      checkSubscriptionStatus();
+    if (typeof window !== 'undefined') {
+      const supported = 'Notification' in window;
+      setIsSupported(supported);
+      setPermission(supported ? Notification.permission : 'denied');
+      console.log('NotificationProvider - 기본 알림 지원 여부:', supported);
     }
-  }, [isSupported, user, checkSubscriptionStatus]);
+  }, []);
 
-  // 권한 요청
+  // 간단한 알림 권한 체크만
+  useEffect(() => {
+    if (isSupported && typeof window !== 'undefined') {
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+      setIsSubscribed(currentPermission === 'granted');
+      console.log('현재 알림 권한 상태:', currentPermission);
+    }
+  }, [isSupported, user]);
+
+  // 기본 브라우저 알림 권한 요청
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
-      console.warn('Push notifications are not supported');
+      console.warn('Notifications are not supported');
       return false;
     }
 
     try {
       setIsLoading(true);
-      const newPermission = await requestNotificationPermission();
+      console.log('권한 요청 전 상태:', Notification.permission);
+      
+      const newPermission = await Notification.requestPermission();
+      console.log('권한 요청 후 상태:', newPermission);
+      
+      // 상태를 즉시 업데이트
       setPermission(newPermission);
+      setIsSubscribed(newPermission === 'granted');
+      
+      // 약간의 지연을 두어 상태 업데이트가 확실히 반영되도록 함
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       return newPermission === 'granted';
     } catch (error) {
       console.error('Permission request failed:', error);
@@ -86,148 +75,74 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [isSupported]);
 
-  // Push 구독 (user_id로만 확인해서 INSERT 또는 UPDATE)
+  // 간단한 알림 활성화
   const subscribe = useCallback(async (): Promise<boolean> => {
-    if (!user || !isSupported || permission !== 'granted') {
+    // 실시간으로 현재 권한 상태 확인
+    const currentPermission = typeof window !== 'undefined' ? Notification.permission : 'denied';
+    
+    if (!user || !isSupported || currentPermission !== 'granted') {
       console.error('Subscribe failed - prerequisites not met:', {
         hasUser: !!user,
         isSupported,
-        permission
+        currentPermission
       });
       return false;
     }
 
     try {
       setIsLoading(true);
-      console.log('Starting subscription process for user:', user.id);
+      console.log('브라우저 알림 활성화');
       
-      const subscriptionData = await subscribeToPush();
-      if (!subscriptionData) {
-        console.error('Failed to get subscription data');
-        return false;
-      }
-
-      console.log('Got subscription data, checking existing subscription...');
-
-      // user_id로 기존 구독 조회 (is_active 상관없이 모든 레코드)
-      const { data: existingSubscription, error: checkError } = await supabase
-        .from('user_push_subscriptions')
-        .select('id, is_active')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      console.log('기존 구독 확인:', { 
-        hasExisting: !!existingSubscription, 
-        isActive: existingSubscription?.is_active,
-        checkError 
-      });
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('기존 구독 확인 실패:', checkError);
-        return false;
-      }
-
-      let result;
+      // localStorage에 알림 설정 저장
+      localStorage.setItem('user-wants-notifications', 'true');
       
-      if (existingSubscription) {
-        // 기존 구독이 있으면 UPDATE (endpoint와 키 정보 업데이트 + 활성화)
-        console.log('Updating existing subscription with ID:', existingSubscription.id);
-        const { data, error } = await supabase
-          .from('user_push_subscriptions')
-          .update({
-            endpoint: subscriptionData.endpoint,
-            p256dh_key: subscriptionData.keys.p256dh,
-            auth_key: subscriptionData.keys.auth,
-            is_active: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSubscription.id)
-          .select()
-          .single();
-
-        result = { data, error, operation: 'UPDATE' };
-      } else {
-        // 기존 구독이 없으면 INSERT (새 구독 생성)
-        console.log('Creating new subscription...');
-        const { data, error } = await supabase
-          .from('user_push_subscriptions')
-          .insert({
-            user_id: user.id,
-            endpoint: subscriptionData.endpoint,
-            p256dh_key: subscriptionData.keys.p256dh,
-            auth_key: subscriptionData.keys.auth,
-            is_active: true
-          })
-          .select()
-          .single();
-
-        result = { data, error, operation: 'INSERT' };
-      }
-
-      console.log('구독 처리 결과:', {
-        operation: result.operation,
-        success: !result.error,
-        error: result.error
-      });
-
-      if (result.error) {
-        console.error('Failed to save subscription:', result.error);
-        return false;
-      }
-
-      console.log('Subscription saved successfully');
+      // 상태를 실시간 권한 상태로 업데이트
+      setPermission(currentPermission);
       setIsSubscribed(true);
+      
+      // storage 이벤트 발생시키기 (같은 탭에서도 감지되도록)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'user-wants-notifications',
+        newValue: 'true',
+        oldValue: 'false',
+        storageArea: localStorage
+      }));
+      
+      // 간단한 알림 테스트
+      new Notification('T-BRIDGE', {
+        body: '알림이 활성화되었습니다!',
+        icon: '/next.svg'
+      });
+      
+      console.log('✅ 알림 구독 완료');
       return true;
     } catch (error) {
-      console.error('Subscription failed:', error);
+      console.error('Notification activation failed:', error);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [user, isSupported, permission]);
+  }, [user, isSupported]);
 
-  // Push 구독 해제 (user_id로 찾아서 is_active를 false로 UPDATE)
+  // 간단한 알림 비활성화
   const unsubscribe = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
 
     try {
       setIsLoading(true);
-      console.log('Starting unsubscribe for user:', user.id);
+      console.log('브라우저 알림 비활성화');
       
-      // 1. 브라우저에서 구독 해제
-      try {
-        const browserUnsubscribed = await unsubscribeFromPush();
-        console.log('Browser unsubscribe result:', browserUnsubscribed);
-      } catch (pushError) {
-        console.warn('Browser unsubscribe failed:', pushError);
-      }
-
-      // 2. 서버에서 해당 사용자의 구독을 is_active = false로 UPDATE
-      console.log('Deactivating subscription in database...');
-      const { data, error } = await supabase
-        .from('user_push_subscriptions')
-        .update({ 
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .select();
-
-      console.log('Server update result:', {
-        success: !error,
-        updatedCount: data?.length || 0,
-        error
-      });
-
-      if (error) {
-        console.error('Database update failed:', error);
-        return false;
-      }
-
-      if (data && data.length === 0) {
-        console.warn('No subscriptions were updated - user might not have any subscriptions');
-      }
-
+      // localStorage에서 알림 설정 제거
+      localStorage.removeItem('user-wants-notifications');
+      
+      // storage 이벤트 발생시키기 (같은 탭에서도 감지되도록)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'user-wants-notifications',
+        newValue: null,
+        oldValue: 'true',
+        storageArea: localStorage
+      }));
+      
       setIsSubscribed(false);
       return true;
 

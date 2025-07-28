@@ -22,8 +22,9 @@ RUN pnpm install
 # 6. 나머지 소스 코드를 복사합니다.
 COPY . .
 
-# 애플리케이션 실행 포트 노출
-EXPOSE 3000
+# 애플리케이션 실행 포트 노출 (HTTP와 HTTPS 모두)
+EXPOSE 50331 50443
 
 # 7. 앱을 실행할 기본 명령어를 설정합니다.
-CMD ["pnpm", "run", "dev"]
+# 환경 변수에 따라 HTTPS 또는 HTTP로 실행
+CMD ["sh", "-c", "if [ \"$HTTPS\" = \"true\" ]; then pnpm run dev:https; else pnpm run dev; fi"]

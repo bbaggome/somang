@@ -6,10 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 T-BRIDGE is a transparent telecom quote comparison service with a multi-app architecture:
 
-- **user-app** (port 50331): Customer-facing app for requesting telecom quotes with PWA support, push notifications, and Kakao OAuth
+- **user-app** (port 50331): Customer-facing web app for requesting telecom quotes with basic browser notifications and Kakao OAuth
 - **biz-app** (port 50332): Business-facing app for telecom stores to create and send quotes
 - **admin-app** (port 50333): Administrative interface (basic structure only)
-- **supabase/**: Backend with Edge Functions for push notifications
+- **supabase/**: Backend with Edge Functions
+
+Tech Stack: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS, Supabase, pnpm
 
 ## Common Development Commands
 
@@ -17,6 +19,9 @@ T-BRIDGE is a transparent telecom quote comparison service with a multi-app arch
 ```bash
 # User App (port 50331)
 cd user-app && pnpm dev
+
+# User App with HTTPS (개발용)
+cd user-app && pnpm dev:https
 
 # Business App (port 50332) 
 cd biz-app && pnpm dev
@@ -33,8 +38,11 @@ cd [app-name] && pnpm lint
 
 ### Docker Development
 ```bash
-# Development environment (all apps)
-docker-compose --profile dev up
+# Development environment (all apps) - HTTP
+docker-compose --profile dev up --build
+
+# Development environment with HTTPS (user-app)
+docker-compose --profile dev up --build user-app-dev
 
 # Production environment
 docker-compose --profile prod up
@@ -43,6 +51,10 @@ docker-compose --profile prod up
 docker-compose up user-app-dev
 docker-compose up biz-app-dev
 ```
+
+### HTTPS 접속 방법
+- HTTP: http://localhost:50331 (기본)
+- HTTPS: https://localhost:50443 (알림 기능 테스트용)
 
 ### Supabase
 ```bash
@@ -66,17 +78,31 @@ Each app uses **separate Supabase clients with isolated storage keys**:
 
 Role validation happens in AuthProvider with automatic logout for unauthorized roles.
 
+**Key authentication files**:
+- `src/components/AuthProvider.tsx`: Role-based session management with nickname generation
+- `src/lib/supabase/client.ts`: App-specific Supabase client configuration
+
 ### Real-time Notification System
-**Multi-layer notification architecture**:
+**Simple notification architecture**:
 1. **Supabase Realtime**: Live quote updates via PostgreSQL change streams
-2. **Push Notifications**: Browser push via Service Worker + Edge Function
+2. **Browser Notifications**: Basic browser notifications with user permission
 3. **In-App Notifications**: RealtimeNotificationProvider for live UI updates
 
-**Critical notification flow**: Quote creation → Edge Function push → Service Worker → User notification
+**Notification flow**: Quote creation → Realtime update → Browser notification
+
+**Key notification files**:
+- `src/components/RealtimeNotificationProvider.tsx`: Realtime quote monitoring and browser notifications
+- `src/components/NotificationSettings.tsx`: User notification preferences UI
+- `supabase/functions/send-push-notification/`: Edge function for web push (uses VAPID keys)
 
 ### Quote Request Workflow
 **User journey**: mobile/step1-8 → QuoteContext (state management) → Supabase → Business notification
-**Business response**: Quote creation → Push notification → User sees quote
+**Business response**: Quote creation → Browser notification → User sees quote
+
+**Mobile quote flow pages**:
+- `src/app/quote/mobile/step1-8/`: Multi-step quote request form
+- `src/app/quote/requests/`: User's quote request list and details
+- `src/context/QuoteContext.tsx`: Temporary state management for quote flow
 
 ### State Management Patterns
 - **QuoteContext**: React Context for quote request flow (⚠️ volatile - resets on page refresh)
@@ -97,6 +123,13 @@ Role validation happens in AuthProvider with automatic logout for unauthorized r
 ### Known Data Persistence Problems
 - QuoteContext data is lost on page refresh - consider SessionStorage migration
 - Migration files missing - database schema not version controlled
+- Multi-step quote form loses progress on navigation away
+
+### Notification System
+- Uses basic browser notifications (no PWA/Service Worker)
+- Requires user permission for desktop notifications
+- Real-time updates via Supabase Realtime subscriptions
+- Notification permission stored in localStorage as `'user-wants-notifications'`
 
 ### Security Considerations
 - Row Level Security (RLS) policies not confirmed in codebase
@@ -107,6 +140,7 @@ Role validation happens in AuthProvider with automatic logout for unauthorized r
 - Quote request subscription timing with status changes
 - Concurrent quote submissions for same request_id
 - Push notification vs. realtime notification ordering
+- RealtimeNotificationProvider watches all user requests without status filtering
 
 ## Environment Setup
 
@@ -132,3 +166,29 @@ VAPID_PRIVATE_KEY=your-vapid-private-key
 - Development uses hot reloading with volume mounts
 - Production builds optimized for smaller image size
 - Custom port mapping: 50331 (user), 50332 (biz), 50333 (admin)
+- HTTPS development on port 50443 for user-app (notification testing)
+
+## Project Structure
+```
+├── user-app/           # Customer-facing Next.js app
+├── biz-app/            # Business-facing Next.js app
+├── admin-app/          # Admin Next.js app (minimal)
+├── supabase/           # Backend configuration
+│   ├── functions/      # Edge Functions (Deno)
+│   └── enable_realtime.sql
+├── docker-compose.yml  # Multi-app orchestration
+└── package.json        # Root dependencies
+```
+
+## Common Gotchas
+
+### Authentication Issues
+- Each app has its own storage key to prevent session conflicts
+- Role enforcement happens client-side in AuthProvider - ensure server-side validation
+- Kakao OAuth callback must match configured redirect URI exactly
+
+### Development Tips
+- Use HTTPS mode (`pnpm dev:https`) for testing browser notifications
+- Check browser console for realtime subscription status messages
+- Monitor Supabase logs for Edge Function execution results
+- Clear localStorage when switching between apps to avoid auth conflicts

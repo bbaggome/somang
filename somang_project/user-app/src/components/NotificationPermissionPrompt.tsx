@@ -12,12 +12,15 @@ export default function NotificationPermissionPrompt() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // 알림이 지원되고, 권한이 없고, 구독하지 않은 경우에만 프롬프트 표시
-    if (isSupported && permission === 'default' && !isSubscribed) {
-      // 페이지 로드 후 3초 후에 프롬프트 표시
+    // 사용자가 명시적으로 알림을 원하는 경우에만 프롬프트 표시
+    // 자동으로 표시하지 않고, localStorage에서 사용자의 선택을 확인
+    const userWantsNotifications = localStorage.getItem('user-wants-notifications');
+    
+    if (isSupported && permission === 'default' && !isSubscribed && userWantsNotifications === 'true') {
+      // 사용자가 알림을 원한다고 표시한 경우에만 프롬프트 표시
       const timer = setTimeout(() => {
         setShowPrompt(true);
-      }, 3000);
+      }, 1000);
 
       return () => clearTimeout(timer);
     }

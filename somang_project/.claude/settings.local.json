@@ -29,7 +29,12 @@
       "Bash(supabase secrets:*)",
       "Bash(java:*)",
       "Bash(ipconfig)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(curl:*)",
+      "Bash(pnpm run:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   }

@@ -77,32 +77,88 @@ export const RealtimeNotificationProvider = ({
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const mounted = useRef(true);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
+  
+  // 알림 설정 상태 확인
+  useEffect(() => {
+    const checkNotificationStatus = () => {
+      const enabled = localStorage.getItem('user-wants-notifications') === 'true' && 
+                     Notification.permission === 'granted';
+      setIsNotificationEnabled(enabled);
+      console.log('알림 설정 상태:', { enabled, permission: Notification.permission });
+    };
+    
+    checkNotificationStatus();
+    
+    // 스토리지 변경 감지
+    window.addEventListener('storage', checkNotificationStatus);
+    return () => window.removeEventListener('storage', checkNotificationStatus);
+  }, []);
 
   // 앱 내 알림 표시
   const showInAppNotification = useCallback(
     (notification: RealtimeNotification) => {
       console.log("새 알림:", notification);
       
-      // Service Worker가 푸시 알림을 처리하므로 여기서는 브라우저 알림을 표시하지 않음
-      // NotificationToast 컴포넌트가 화면에 알림을 표시함
+      // 알림 설정이 켜져있고 권한이 있는 경우에만 브라우저 알림 표시
+      if (isNotificationEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        console.log('🔔 브라우저 알림 표시:', notification.title);
+        
+        const browserNotification = new Notification(notification.title, {
+          body: notification.message,
+          icon: '/next.svg',
+          tag: notification.id,
+          data: notification.data,
+          requireInteraction: true
+        });
+
+        browserNotification.onclick = () => {
+          console.log('🔔 알림 클릭됨');
+          window.focus();
+          if (notification.data?.requestId) {
+            // 견적 상세 페이지로 이동
+            window.location.href = `/quote/requests/${notification.data.requestId}`;
+          }
+          browserNotification.close();
+        };
+
+        // 10초 후 자동 닫기
+        setTimeout(() => {
+          browserNotification.close();
+        }, 10000);
+      } else {
+        console.warn('🔔 알림 표시 안함:', {
+          isNotificationEnabled,
+          hasNotification: 'Notification' in window,
+          permission: Notification.permission,
+          localStorage: localStorage.getItem('user-wants-notifications')
+        });
+      }
     },
-    []
+    [isNotificationEnabled]
   );
 
   // 새 견적 처리
   const handleNewQuote = useCallback(
     async (newQuote: Quote) => {
-      if (!user || !mounted.current) return;
+      if (!user || !mounted.current) {
+        console.log('🔔 handleNewQuote 조건 실패:', { hasUser: !!user, mounted: mounted.current });
+        return;
+      }
 
-      console.log('🔔 새 견적 수신:', newQuote);
+      console.log('🔔 새 견적 수신 처리 시작:', newQuote);
 
       try {
         // 매장 정보 가져오기
-        const { data: store } = await supabase
+        const { data: store, error: storeError } = await supabase
           .from("stores")
           .select("name")
           .eq("id", newQuote.store_id)
-          .single();
+          .maybeSingle(); // single() 대신 maybeSingle() 사용
+          
+        if (storeError) {
+          console.warn("매장 정보 로드 실패:", storeError);
+        }
 
         // 견적 요청 정보 가져오기 (디바이스 정보 포함)
         const { data: quoteRequest } = await supabase
@@ -173,22 +229,21 @@ export const RealtimeNotificationProvider = ({
 
       console.log("Setting up realtime subscription for user:", user.id);
 
-      // 사용자의 견적 요청 ID들을 먼저 가져오기
+      // 사용자의 모든 견적 요청 ID들을 가져오기 (status 제한 없음)
       const { data: userRequests } = await supabase
         .from("quote_requests")
         .select("id")
-        .eq("user_id", user.id)
-        .eq("status", "open");
+        .eq("user_id", user.id);
 
       if (!userRequests || userRequests.length === 0) {
-        console.log("No open quote requests for user");
+        console.log("No quote requests for user");
         return;
       }
 
       const requestIds = userRequests.map((req) => req.id);
-      console.log("Watching quote requests:", requestIds);
+      console.log("Watching all quote requests:", requestIds);
 
-      // 새 채널 생성 및 구독
+      // 새 채널 생성 및 구독 (필터 없이 모든 quotes 테이블 INSERT 이벤트 감지)
       const channel = supabase
         .channel(`user_quotes_${user.id}`)
         .on(
@@ -196,16 +251,28 @@ export const RealtimeNotificationProvider = ({
           {
             event: "INSERT",
             schema: "public",
-            table: "quotes",
-            filter: `request_id=in.(${requestIds.join(",")})`, // 사용자의 요청에 대한 견적만 필터링
+            table: "quotes"
+            // 필터 제거 - 모든 INSERT 이벤트를 받아서 직접 필터링
           },
           async (payload) => {
-            console.log("New quote received:", payload);
-            await handleNewQuote(payload.new as Quote);
+            console.log("🔥 모든 QUOTE INSERT 이벤트 수신:", payload);
+            console.log("🔥 Request ID:", payload.new?.request_id);
+            console.log("🔥 사용자 Request IDs:", requestIds);
+            
+            // 수동 필터링: 사용자의 요청에 대한 견적인지 확인
+            if (payload.new?.request_id && requestIds.includes(payload.new.request_id)) {
+              console.log("🔥 사용자 견적 매칭됨! 알림 처리 시작");
+              await handleNewQuote(payload.new as Quote);
+            } else {
+              console.log("🔥 다른 사용자의 견적이므로 무시");
+            }
           }
         )
         .subscribe((status) => {
           console.log("Realtime subscription status:", status);
+          if (status === 'SUBSCRIBED') {
+            console.log("✅ 실시간 알림 구독 완료 - 새 견적 알림을 받을 준비가 되었습니다!");
+          }
         });
 
       channelRef.current = channel;
@@ -271,71 +338,14 @@ export const RealtimeNotificationProvider = ({
     };
   }, [user, setupRealtimeSubscription]);
 
-  // 컴포넌트 언마운트 시 정리 및 Service Worker 메시지 리스너 설정
+  // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     mounted.current = true;
-    
-    // Service Worker 메시지 리스너 추가
-    const handleServiceWorkerMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'show-notification') {
-        const notificationData = event.data.payload;
-        console.log('🔔 Showing notification from SW:', notificationData);
-        
-        // 메인 스레드에서 시스템 알림 표시
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const notification = new Notification(notificationData.title, {
-            body: notificationData.body,
-            icon: notificationData.icon,
-            tag: notificationData.tag,
-            data: notificationData.data
-          });
-
-          notification.onclick = () => {
-            window.focus();
-            if (notificationData.data?.url) {
-              window.location.href = notificationData.data.url;
-            }
-            notification.close();
-          };
-
-          // 5초 후 자동 닫기
-          setTimeout(() => {
-            notification.close();
-          }, 5000);
-        }
-
-        // 웹 페이지 내 알림도 추가
-        const webNotification: RealtimeNotification = {
-          id: `sw_${Date.now()}`,
-          type: "quote",
-          title: notificationData.title,
-          message: notificationData.body,
-          data: {
-            requestId: notificationData.data?.quoteId || notificationData.data?.url?.match(/\/([^\/]+)$/)?.[1],
-          },
-          read: false,
-          created_at: new Date().toISOString(),
-        };
-
-        if (mounted.current) {
-          setNotifications((prev) => [webNotification, ...prev]);
-        }
-      }
-    };
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    }
     
     return () => {
       mounted.current = false;
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
-      }
-      
-      // Service Worker 리스너 제거
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
       }
     };
   }, []);
