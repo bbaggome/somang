@@ -22,8 +22,9 @@ RUN pnpm install
 # 6. 나머지 소스 코드를 복사합니다.
 COPY . .
 
-# 애플리케이션 실행 포트 노출
-EXPOSE 3000
+# 애플리케이션 실행 포트 노출 (HTTP와 HTTPS 모두)
+EXPOSE 50333 50445
 
 # 7. 앱을 실행할 기본 명령어를 설정합니다.
-CMD ["pnpm", "run", "dev"]
+# Docker 환경에서는 항상 HTTPS로 실행
+CMD ["pnpm", "run", "dev:docker"]

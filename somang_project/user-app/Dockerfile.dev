@@ -26,5 +26,5 @@ COPY . .
 EXPOSE 50331 50443
 
 # 7. 앱을 실행할 기본 명령어를 설정합니다.
-# 환경 변수에 따라 HTTPS 또는 HTTP로 실행
-CMD ["sh", "-c", "if [ \"$HTTPS\" = \"true\" ]; then pnpm run dev:https; else pnpm run dev; fi"]
+# Docker 환경에서는 항상 HTTPS로 실행
+CMD ["pnpm", "run", "dev:docker"]

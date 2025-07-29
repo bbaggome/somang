@@ -6,12 +6,12 @@ services:
       context: ./user-app
       dockerfile: Dockerfile.dev
     ports:
-      - "50331:50331"  # HTTP 포트
-      - "50443:50443"  # HTTPS 포트
+      - "50443:50443"  # HTTPS 포트만 노출
     volumes:
       - ./user-app:/app
       - /app/node_modules
       - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
     environment:
       - WATCHPACK_POLLING=true
       - HTTPS=true
@@ -30,13 +30,16 @@ services:
       context: ./biz-app
       dockerfile: Dockerfile.dev
     ports:
-      - "50332:50332"  # 동일하게 3000으로 수정
+      - "50444:50444"  # HTTPS 포트만 노출
     volumes:
       - ./biz-app:/app
       - /app/node_modules
       - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
     environment:
       - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50444
     profiles:
       - "dev"
     networks:
@@ -50,13 +53,16 @@ services:
       context: ./admin-app
       dockerfile: Dockerfile.dev
     ports:
-      - "50333:50333"  # 동일하게 3000으로 수정
+      - "50445:50445"  # HTTPS 포트만 노출
     volumes:
       - ./admin-app:/app
       - /app/node_modules
       - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
     environment:
       - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50445
     profiles:
       - "dev"
     networks:

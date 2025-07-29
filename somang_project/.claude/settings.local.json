@@ -34,7 +34,15 @@
       "Bash(pnpm run lint:*)",
       "Bash(curl:*)",
       "Bash(pnpm run:*)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(mkdir:*)",
+      "Bash(env)",
+      "Bash(cat:*)",
+      "Bash(where:*)",
+      "Bash(certs/mkcert.exe -install:*)",
+      "Bash(certs/mkcert.exe:*)"
     ],
     "deny": []
   }

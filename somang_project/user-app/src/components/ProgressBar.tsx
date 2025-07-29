@@ -1,4 +1,6 @@
 // /src/components/ProgressBar.tsx
+import { useEffect, useRef } from 'react';
+
 interface ProgressBarProps {
   currentStep: number;
   totalSteps: number;
@@ -10,13 +12,20 @@ export default function ProgressBar({
   totalSteps, 
   className = "" 
 }: ProgressBarProps) {
-  const percentage = (currentStep / totalSteps) * 100;
+  const progressRef = useRef<HTMLDivElement>(null);
+  const percentage = Math.min((currentStep / totalSteps) * 100, 100);
+  
+  useEffect(() => {
+    if (progressRef.current) {
+      progressRef.current.style.setProperty('--progress-width', `${percentage}%`);
+    }
+  }, [percentage]);
   
   return (
     <div className={`w-full bg-gray-200 h-1 flex-shrink-0 ${className}`}>
       <div 
-        className="bg-blue-600 h-1 transition-all duration-500 ease-out"
-        style={{ width: `${percentage}%` }}
+        ref={progressRef}
+        className="bg-blue-600 h-1 transition-all duration-500 ease-out progress-bar-fill"
       />
     </div>
   );

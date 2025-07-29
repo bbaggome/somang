@@ -38,11 +38,8 @@ cd [app-name] && pnpm lint
 
 ### Docker Development
 ```bash
-# Development environment (all apps) - HTTP
+# Development environment (all apps) - HTTPS
 docker-compose --profile dev up --build
-
-# Development environment with HTTPS (user-app)
-docker-compose --profile dev up --build user-app-dev
 
 # Production environment
 docker-compose --profile prod up
@@ -50,11 +47,15 @@ docker-compose --profile prod up
 # Individual app containers
 docker-compose up user-app-dev
 docker-compose up biz-app-dev
+docker-compose up admin-app-dev
 ```
 
-### HTTPS 접속 방법
-- HTTP: http://localhost:50331 (기본)
-- HTTPS: https://localhost:50443 (알림 기능 테스트용)
+### HTTPS 접속 방법 (Docker 환경)
+- User App: https://localhost:50443
+- Biz App: https://localhost:50444
+- Admin App: https://localhost:50445
+
+**Note**: 자체 서명 인증서를 사용하므로 브라우저에서 보안 경고가 표시됩니다. 개발 환경에서는 "고급" → "계속 진행"을 선택하세요.
 
 ### Supabase
 ```bash

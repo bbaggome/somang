@@ -17,3 +17,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Progress Bar Component Styles */
+.progress-bar-fill {
+  width: var(--progress-width, 0%);
+  transform-origin: left;
+}
