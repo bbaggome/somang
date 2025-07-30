@@ -117,27 +117,48 @@ function LoginPageContent() {
       setIsLoggingIn(true);
       setError(null);
 
-      // 리디렉션 URL 설정 (웹 환경만 지원)
-      let redirectTo: string;
+      // WebView 환경 감지
+      const isWebView = searchParams.get('mobile') === 'true';
+      const userAgent = navigator.userAgent;
+      const isReactNativeWebView = userAgent.includes('ReactNativeWebView');
       
-      if (typeof window !== 'undefined') {
-        // 웹 환경: 현재 도메인으로 리디렉션
-        redirectTo = `${window.location.origin}/login`;
-        console.log('웹 리디렉션 사용:', redirectTo);
-      } else {
-        // 서버 사이드 렌더링 환경: 기본값
-        redirectTo = `https://bbxycbghbatcovzuiotu.supabase.co/auth/v1/callback`;
-      }
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: {
-          redirectTo: redirectTo,
-        },
+      console.log('로그인 환경 감지:', { 
+        isWebView, 
+        isReactNativeWebView, 
+        userAgent: userAgent.substring(0, 100) 
       });
 
-      if (error) {
-        throw error;
+      if (isWebView || isReactNativeWebView) {
+        // WebView 환경: 같은 창에서 카카오 로그인 처리
+        console.log('WebView 환경에서 카카오 로그인 시작');
+        
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'kakao',
+          options: {
+            redirectTo: `${window.location.origin}/login?mobile=true`,
+            // WebView에서는 popup 대신 같은 창 사용
+            skipBrowserRedirect: false,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        // 일반 웹 환경: 기존 로직
+        const redirectTo = `${window.location.origin}/login`;
+        console.log('웹 환경에서 카카오 로그인 시작:', redirectTo);
+        
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'kakao',
+          options: {
+            redirectTo: redirectTo,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
       }
     } catch (err) {
       console.error('카카오 로그인 실패:', err);
@@ -202,7 +223,10 @@ function LoginPageContent() {
               환영합니다! 👋
             </h2>
             <p className="text-gray-600">
-              지금 바로 시작해 볼까요?
+              {(searchParams.get('mobile') === 'true' || navigator.userAgent.includes('ReactNativeWebView')) 
+                ? '모바일 앱에서 간편하게 로그인하세요'
+                : '지금 바로 시작해 볼까요?'
+              }
             </p>
           </div>
 

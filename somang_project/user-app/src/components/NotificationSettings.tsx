@@ -17,6 +17,29 @@ export default function NotificationSettings() {
   } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
 
+  // WebView 환경 감지 (React Native WebView)
+  const isWebView = typeof window !== 'undefined' && 
+    typeof navigator !== 'undefined' && (
+      navigator.userAgent.includes('ReactNativeWebView') ||
+      // 대안 감지 방법들
+      (typeof window.ReactNativeWebView !== 'undefined') ||
+      navigator.userAgent.includes('wv') || // Android WebView
+      /Android.*wv/.test(navigator.userAgent)
+    );
+  
+  // 디버깅 정보
+  if (typeof window !== 'undefined') {
+    console.log('🔍 NotificationSettings 환경 체크:', {
+      userAgent: navigator.userAgent,
+      isWebView,
+      hasReactNativeWebView: navigator.userAgent.includes('ReactNativeWebView'),
+      hasWindowReactNativeWebView: typeof window.ReactNativeWebView !== 'undefined',
+      hasWv: navigator.userAgent.includes('wv'),
+      androidWvTest: /Android.*wv/.test(navigator.userAgent),
+      url: window.location.href
+    });
+  }
+
   const handleToggleNotifications = async () => {
     console.log('🔄 알림 설정 토글 시작:', { isSubscribed, permission });
     setIsLoading(true);
@@ -85,6 +108,23 @@ export default function NotificationSettings() {
     }
   };
 
+
+  // WebView 환경에서는 알림 설정을 숨김
+  if (isWebView) {
+    return (
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <span className="text-blue-600">📱</span>
+          <div>
+            <p className="text-sm font-medium text-blue-800">모바일 앱</p>
+            <p className="text-xs text-blue-600">
+              모바일 앱에서는 자동으로 견적 알림을 받으실 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isSupported) {
     return (

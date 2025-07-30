@@ -1,14 +1,16 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking, Platform, BackHandler } from 'react-native';
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './src/lib/supabase';
 
-export default function App() {
-  const [currentView, setCurrentView] = React.useState<'native' | 'web'>('native');
-  const [user, setUser] = React.useState<any>(null);
-  const [authUrl, setAuthUrl] = React.useState<string>('');
+function AppContent() {
+  const [user, setUser] = React.useState<any>(null);  
+  const [webUrl, setWebUrl] = React.useState<string>('http://192.168.0.123:50331/login'); // HTTP로 변경 (SSL 문제 회피)
+  const insets = useSafeAreaInsets();
+  const webViewRef = React.useRef<WebView>(null);
 
   React.useEffect(() => {
     // 현재 세션 확인
@@ -16,6 +18,15 @@ export default function App() {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       console.log('현재 세션:', session?.user?.email || '로그인 안됨');
+      
+      // 로그인 상태에 따라 URL 변경 (WebView는 계속 유지)
+      if (session?.user) {
+        console.log('로그인된 사용자 - 메인 페이지로 이동');
+        setWebUrl('http://192.168.0.123:50331/');
+      } else {
+        console.log('로그인 안됨 - 로그인 페이지 유지');
+        setWebUrl('http://192.168.0.123:50331/login');
+      }
     };
     
     checkSession();
@@ -24,6 +35,15 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       console.log('세션 변경:', session?.user?.email || '로그아웃됨');
+      
+      // 세션 변경 시 URL 업데이트
+      if (session?.user) {
+        console.log('로그인 성공 - 메인 페이지로 이동');
+        setWebUrl('http://192.168.0.123:50331/');
+      } else {
+        console.log('로그아웃 - 로그인 페이지로 이동');
+        setWebUrl('http://192.168.0.123:50331/login');
+      }
     });
 
     // 앱이 포그라운드로 돌아올 때 세션 체크
@@ -54,283 +74,280 @@ export default function App() {
     // URL 리스너 등록
     const urlSubscription = Linking.addEventListener('url', urlHandler);
 
+    // Android 뒤로가기 버튼 처리
+    const backAction = () => {
+      if (webViewRef.current) {
+        webViewRef.current.goBack();
+        return true; // 기본 뒤로가기 동작 차단
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
     return () => {
       subscription.unsubscribe();
       clearInterval(interval);
       urlSubscription.remove();
+      backHandler.remove();
     };
   }, []);
 
-  const handleKakaoLogin = async () => {
-    try {
-      console.log('카카오 로그인 시작...');
-      
-      // WebView로 user-app 로그인 페이지 열기
-      setAuthUrl('http://localhost:50331/login?mobile=true');
-      setCurrentView('web');
-      
-    } catch (err) {
-      console.error('카카오 로그인 에러:', err);
-      Alert.alert('에러', '로그인 중 오류가 발생했습니다.');
-    }
-  };
-
-  if (currentView === 'web') {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => setCurrentView('native')}
-          >
-            <Text style={styles.backButtonText}>← 네이티브로</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>WebView 모드</Text>
-        </View>
-        
-        <WebView
-          source={{ uri: authUrl || 'https://bbxycbghbatcovzuiotu.supabase.co' }}
-          style={styles.webview}
-          originWhitelist={['*']}
-          // Android에서 SSL 오류 무시
-          onShouldStartLoadWithRequest={() => true}
-          // iOS에서 SSL 오류 무시
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          // 개발 환경에서 SSL 인증서 무시
-          androidHardwareAccelerationDisabled={true}
-          mixedContentMode={'always'}
-          onError={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent;
-            console.warn('WebView 에러:', nativeEvent);
-            // SSL 오류는 무시하고 계속 진행
-            if (nativeEvent.code === 3 || nativeEvent.description.includes('SSL')) {
-              console.log('SSL 오류 무시');
-            } else {
-              Alert.alert('WebView 에러', '웹 페이지를 로드할 수 없습니다.');
-            }
-          }}
-          onLoadStart={() => console.log('WebView 로딩 시작')}
-          onLoadEnd={() => console.log('WebView 로딩 완료')}
-          injectedJavaScript={`
-            (function() {
-              // localStorage에서 user-app 세션 체크
-              setInterval(() => {
+  // 완전한 WebView 앱 - 네이티브 화면 없음
+  return (
+    <SafeAreaView style={styles.container}>
+      <WebView
+        ref={webViewRef}
+        source={{ uri: webUrl }}
+        style={[styles.webview, {
+          marginTop: Platform.OS === 'android' ? 0 : 0, // SafeAreaView가 처리
+          marginBottom: Platform.OS === 'android' ? 0 : 0, // SafeAreaView가 처리
+        }]}
+        originWhitelist={['*']}
+        // 외부 링크 처리 - 카카오 로그인도 WebView 내부에서 처리
+        onShouldStartLoadWithRequest={(request) => {
+          console.log('요청 URL:', request.url);
+          
+          // 모든 요청을 WebView에서 처리 (완전한 웹앱 경험)
+          return true;
+        }}
+        // iOS에서 SSL 오류 무시
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        // SSL 인증서 무시 및 보안 설정
+        androidHardwareAccelerationDisabled={true}
+        mixedContentMode={'always'}  
+        allowsUnsecureHttps={true}
+        ignoreSslError={true}
+        // 쿠키 및 세션 저장 허용
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        // 캐시 설정 - 개발 중에는 항상 새로고침
+        cacheEnabled={false}
+        incognito={false}
+        // 추가 보안 설정 무시
+        allowsProtectedMedia={true}
+        allowFileAccess={true}
+        allowFileAccessFromFileURLs={true}
+        allowUniversalAccessFromFileURLs={true}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView 에러:', nativeEvent);
+          // SSL 오류는 무시하고 계속 진행
+          if (nativeEvent.code === 3 || nativeEvent.description.includes('SSL')) {
+            console.log('SSL 오류 무시 - 계속 진행');
+            // SSL 오류는 무시하고 계속 로드
+            return;
+          } else {
+            console.error('WebView 치명적 에러:', nativeEvent);
+            // 치명적 에러만 사용자에게 알림
+            Alert.alert('연결 오류', '웹 페이지를 로드할 수 없습니다. 네트워크 연결을 확인해주세요.');
+          }
+        }}
+        onLoadStart={(event) => {
+          console.log('WebView 로딩 시작:', event.nativeEvent.url);
+        }}
+        onLoadEnd={(event) => {
+          console.log('WebView 로딩 완료:', event.nativeEvent.url);
+        }}
+        injectedJavaScript={`
+          (function() {
+            console.log('🟢 WebView JavaScript 초기화 - 버전 2.0');
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'debug',
+              message: 'JavaScript 실행됨!'
+            }));
+            
+            let lastTokenSent = null;
+            let checkCount = 0;
+            
+            // 세션 체크 함수
+            const checkSession = () => {
+              try {
+                checkCount++;
+                
+                // 로그를 React Native로 전송
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'debug',
+                  message: '🔍 세션 체크 #' + checkCount
+                }));
+                
+                // 현재 URL과 localStorage 상태 로깅
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'debug',
+                  message: '🌐 현재 URL: ' + window.location.href
+                }));
+                
+                // 모든 localStorage 키들 확인
+                const allKeys = Object.keys(localStorage);
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'debug',
+                  message: '🗂️ localStorage 키들: ' + JSON.stringify(allKeys)
+                }));
+                
+                // user-token 상세 확인
                 const userToken = localStorage.getItem('user-token');
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'debug',
+                  message: '🔑 user-token 존재: ' + (userToken ? 'YES' : 'NO')
+                }));
+                
                 if (userToken) {
                   window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'user-token',
-                    data: userToken
+                    type: 'debug',
+                    message: '🔑 user-token 길이: ' + userToken.length
                   }));
-                }
-              }, 500);
-              
-              // 페이지 상태 체크
-              const checkLoginStatus = () => {
-                const isLoggedIn = window.location.pathname === '/' || window.location.pathname.includes('dashboard');
-                if (isLoggedIn) {
+                  
                   window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'login-success',
-                    path: window.location.pathname
+                    type: 'debug',
+                    message: '🔑 user-token 미리보기: ' + userToken.substring(0, 200) + '...'
                   }));
                 }
-              };
-              
-              // 페이지 변경 감지
-              let lastPath = window.location.pathname;
-              setInterval(() => {
-                if (window.location.pathname !== lastPath) {
-                  lastPath = window.location.pathname;
-                  checkLoginStatus();
+                
+                if (userToken) {
+                  try {
+                    const tokenData = JSON.parse(userToken);
+                    console.log('🔑 파싱된 토큰 데이터 전체:', tokenData);
+                    console.log('🔑 토큰 데이터 구조:', {
+                      type: typeof tokenData,
+                      keys: Object.keys(tokenData || {}),
+                      hasCurrentSession: !!tokenData.currentSession,
+                      hasAccessToken: !!(tokenData.currentSession?.access_token),
+                      expiresAt: tokenData.currentSession?.expires_at
+                    });
+                    
+                    // 토큰이 있고 이전에 보낸 것과 다르면 전송
+                    if (userToken !== lastTokenSent) {
+                      console.log('📤 새로운 세션 토큰을 React Native로 전송');
+                      lastTokenSent = userToken;
+                      
+                      window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'user-token',
+                        data: userToken
+                      }));
+                    }
+                  } catch (parseError) {
+                    console.error('🔴 토큰 파싱 에러:', parseError);
+                    console.log('🔴 파싱 실패한 원본 데이터:', userToken);
+                  }
+                } else {
+                  console.log('🔑 user-token이 localStorage에 없음');
                 }
-              }, 500);
-            })();
-          `}
-          onMessage={(event) => {
-            try {
-              const message = JSON.parse(event.nativeEvent.data);
-              console.log('WebView 메시지:', message.type);
+                
+              } catch (error) {
+                console.error('🔴 세션 체크 에러:', error);
+              }
+            };
+            
+            // 초기 체크 (즉시)
+            checkSession();
+            
+            // 1초 후 체크
+            setTimeout(checkSession, 1000);
+            
+            // 3초 후 체크  
+            setTimeout(checkSession, 3000);
+            
+            // 주기적 체크 (5초마다)
+            const interval = setInterval(checkSession, 5000);
+            
+            // 페이지 언로드 시 정리
+            window.addEventListener('beforeunload', () => {
+              clearInterval(interval);
+            });
+            
+            console.log('✅ WebView JavaScript 설정 완료');
+          })();
+        `}
+        onMessage={(event) => {
+          try {
+            const message = JSON.parse(event.nativeEvent.data);
+            console.log('📨 WebView 메시지 받음:', message.type);
+            
+            if (message.type === 'debug') {
+              console.log('🐛 Debug:', message.message);
+              return;
+            }
+            
+            if (message.type === 'user-token' && message.data) {
+              console.log('🔑 user-app 토큰 발견, 파싱 시도');
               
-              if (message.type === 'user-token' && message.data) {
-                console.log('user-app 토큰 발견');
+              try {
                 const tokenData = JSON.parse(message.data);
+                console.log('🔑 토큰 데이터 구조:', {
+                  hasCurrentSession: !!tokenData?.currentSession,
+                  hasAccessToken: !!(tokenData?.access_token || tokenData?.currentSession?.access_token),
+                  hasRefreshToken: !!(tokenData?.refresh_token || tokenData?.currentSession?.refresh_token),
+                  topLevelKeys: Object.keys(tokenData || {})
+                });
+                
+                // 두 가지 구조 모두 지원
+                let access_token, refresh_token;
+                
                 if (tokenData?.currentSession) {
-                  const { access_token, refresh_token } = tokenData.currentSession;
+                  // 예상 구조: currentSession 안에 토큰들
+                  access_token = tokenData.currentSession.access_token;
+                  refresh_token = tokenData.currentSession.refresh_token;
+                  console.log('🔑 currentSession 구조 사용');
+                } else if (tokenData?.access_token) {
+                  // 실제 구조: 최상위 레벨에 토큰들
+                  access_token = tokenData.access_token;
+                  refresh_token = tokenData.refresh_token;
+                  console.log('🔑 최상위 레벨 구조 사용');
+                } else {
+                  console.warn('⚠️ 알 수 없는 토큰 구조:', tokenData);
+                }
+                
+                if (access_token && refresh_token) {
+                  console.log('🚀 Supabase 세션 설정 중...', {
+                    access_token_length: access_token.length,
+                    refresh_token_length: refresh_token.length
+                  });
+                  
                   supabase.auth.setSession({
                     access_token,
                     refresh_token,
-                  }).then(() => {
-                    setCurrentView('native');
-                    Alert.alert('로그인 성공', '카카오 로그인이 완료되었습니다.');
+                  }).then((result) => {
+                    console.log('✅ Supabase 세션 설정 완료:', result.error ? '실패' : '성공');
+                    if (result.error) {
+                      console.error('🔴 세션 설정 에러:', result.error);
+                    }
+                  }).catch((error) => {
+                    console.error('🔴 세션 설정 실패:', error);
                   });
+                } else {
+                  console.warn('⚠️ access_token 또는 refresh_token이 없음');
                 }
-              } else if (message.type === 'login-success') {
-                console.log('로그인 성공 감지:', message.path);
-                // 로그인 성공 후 잠시 대기 후 네이티브로 돌아가기
-                setTimeout(() => {
-                  setCurrentView('native');
-                }, 1000);
+              } catch (parseError) {
+                console.error('🔴 토큰 데이터 파싱 에러:', parseError);
               }
-            } catch (error) {
-              console.error('메시지 파싱 에러:', error);
             }
-          }}
-        />
-      </View>
-    );
-  }
+          } catch (error) {
+            console.error('🔴 메시지 파싱 에러:', error);
+          }
+        }}
+      />
+      <StatusBar style="dark" />
+    </SafeAreaView>
+  );
+}
 
+export default function App() {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>T-BRIDGE</Text>
-        <Text style={styles.subtitle}>Mobile App Test</Text>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.description}>
-          🚀 React Native + WebView 하이브리드 앱 테스트
-        </Text>
-        
-        {user && (
-          <View style={styles.userInfo}>
-            <Text style={styles.userText}>✅ 로그인됨: {user.email}</Text>
-          </View>
-        )}
-        
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={handleKakaoLogin}
-        >
-          <Text style={styles.buttonText}>🟡 카카오 로그인 (외부 브라우저)</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.button, styles.webButton]}
-          onPress={() => {
-            // HTTP로 WebView 열기
-            setAuthUrl('http://localhost:50331/login?mobile=true');
-            setCurrentView('web');
-          }}
-        >
-          <Text style={styles.buttonText}>🌐 카카오 로그인 (앱 내 WebView)</Text>
-        </TouchableOpacity>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>📱 테스트 기능</Text>
-          <Text style={styles.infoText}>• 네이티브 카카오 로그인</Text>
-          <Text style={styles.infoText}>• WebView 웹페이지 로드</Text>
-          <Text style={styles.infoText}>• Supabase 연동</Text>
-        </View>
-      </View>
-
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#E3F2FD',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    top: 55,
-    padding: 10,
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  description: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#FEE500',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginBottom: 15,
-    alignItems: 'center',
-  },
-  webButton: {
-    backgroundColor: '#10B981',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  infoBox: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    marginTop: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    backgroundColor: '#ffffff',
   },
   webview: {
     flex: 1,
-  },
-  userInfo: {
-    backgroundColor: '#E8F5E9',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  userText: {
-    color: '#2E7D32',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });

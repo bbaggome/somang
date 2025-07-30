@@ -82,6 +82,12 @@ export const RealtimeNotificationProvider = ({
   // 알림 설정 상태 확인
   useEffect(() => {
     const checkNotificationStatus = () => {
+      // 브라우저 환경에서만 Notification API 사용
+      if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+        setIsNotificationEnabled(false);
+        return;
+      }
+      
       const enabled = localStorage.getItem('user-wants-notifications') === 'true' && 
                      Notification.permission === 'granted';
       setIsNotificationEnabled(enabled);
@@ -90,9 +96,11 @@ export const RealtimeNotificationProvider = ({
     
     checkNotificationStatus();
     
-    // 스토리지 변경 감지
-    window.addEventListener('storage', checkNotificationStatus);
-    return () => window.removeEventListener('storage', checkNotificationStatus);
+    // 브라우저 환경에서만 이벤트 리스너 등록
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', checkNotificationStatus);
+      return () => window.removeEventListener('storage', checkNotificationStatus);
+    }
   }, []);
 
   // 앱 내 알림 표시
@@ -129,9 +137,9 @@ export const RealtimeNotificationProvider = ({
       } else {
         console.warn('🔔 알림 표시 안함:', {
           isNotificationEnabled,
-          hasNotification: 'Notification' in window,
-          permission: Notification.permission,
-          localStorage: localStorage.getItem('user-wants-notifications')
+          hasNotification: typeof window !== 'undefined' && 'Notification' in window,
+          permission: typeof window !== 'undefined' && typeof Notification !== 'undefined' ? Notification.permission : 'unknown',
+          localStorage: typeof window !== 'undefined' ? localStorage.getItem('user-wants-notifications') : null
         });
       }
     },
