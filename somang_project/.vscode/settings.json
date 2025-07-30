@@ -20,5 +20,6 @@
   "files.exclude": {
     "**/node_modules/.pnpm/**/@capacitor/**/android": true,
     "**/node_modules/**/**/android": false
-  }
+  },
+  "java.compile.nullAnalysis.mode": "automatic"
 }

@@ -15,6 +15,18 @@ Tech Stack: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS, Supabase, pnpm
 
 ## Common Development Commands
 
+## 응답 규칙
+- 반응형 디자인 항상 고려
+- 파일 수정 시 경로 명시
+- 수정 부분 주석으로 표시
+- 설명은 간략하게
+- 한국어로 대답
+- 안되는게 있으면 다른 방법을 우선 제안
+
+## 코딩 스타일
+- TypeScript 사용
+- 함수형 컴포넌트 우선
+
 ### Individual App Development
 ```bash
 # User App (port 50331)

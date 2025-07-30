@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "tbridge",
-    "platforms": ["ios", "android", "web"],
+    "platforms": ["ios", "android"],
     "plugins": [
       [
         "expo-location",
@@ -15,11 +15,40 @@
           "locationAlwaysPermission": "이 앱은 견적 요청 시 위치 정보를 사용합니다.",
           "locationWhenInUsePermission": "이 앱은 견적 요청 시 위치 정보를 사용합니다."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1e40af",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
+      [
+        "@react-native-firebase/app"
+      ],
+      [
+        "@react-native-firebase/messaging",
+        {
+          "ios": {
+            "useFrameworkSystemDefault": false
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tbridge.mobile",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "이 앱은 견적 요청 시 위치 정보를 사용합니다.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "이 앱은 견적 요청 시 위치 정보를 사용합니다."
@@ -27,9 +56,14 @@
     },
     "android": {
       "package": "com.tbridge.mobile",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
       ]
     }
   }

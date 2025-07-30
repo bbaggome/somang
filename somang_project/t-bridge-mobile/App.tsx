@@ -6,6 +6,8 @@ import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import * as Location from 'expo-location';
 import { supabase } from './src/lib/supabase';
+import { firebaseFCMService } from './src/services/firebaseFCMService';
+import { SupabaseFirebaseFCMService } from './src/services/supabaseFirebaseFCM';
 
 function AppContent() {
   const [user, setUser] = React.useState<any>(null);  
@@ -394,6 +396,52 @@ function AppContent() {
   };
 
   React.useEffect(() => {
+    // Firebase FCM 알림 초기화 (2025 - 직접 Firebase 사용)
+    const initializeFirebaseFCM = async () => {
+      console.log('🔥 Firebase FCM 초기화 시작...');
+      
+      try {
+        // Firebase 메시지 리스너 설정
+        const cleanupFirebaseListeners = firebaseFCMService.setupFirebaseListeners();
+        
+        // Firebase FCM 토큰 등록
+        const firebaseTokenData = await firebaseFCMService.initializeFirebaseMessaging();
+        
+        if (firebaseTokenData) {
+          console.log('✅ Firebase FCM 등록 성공:', firebaseTokenData.fcmToken.substring(0, 50) + '...');
+          
+          // Supabase에 Firebase FCM 토큰 저장
+          const saveSuccess = await SupabaseFirebaseFCMService.saveFirebaseFCMToken(firebaseTokenData);
+          if (saveSuccess) {
+            console.log('💾 Firebase FCM Token Supabase 저장 성공');
+            
+            // 5초 후 로컬 테스트 알림
+            setTimeout(() => {
+              firebaseFCMService.sendTestLocalNotification();
+            }, 5000);
+            
+            // 10초 후 서버 Firebase FCM 테스트 알림
+            setTimeout(() => {
+              SupabaseFirebaseFCMService.sendTestFirebaseFCMNotification();
+            }, 10000);
+            
+          } else {
+            console.log('❌ Firebase FCM Token Supabase 저장 실패');
+          }
+          
+        } else {
+          console.log('❌ Firebase FCM 등록 실패');
+        }
+        
+        // 정리 함수 등록
+        return cleanupFirebaseListeners;
+      } catch (error) {
+        console.error('❌ Firebase FCM 초기화 오류:', error);
+      }
+    };
+    
+    initializeFirebaseFCM();
+
     // 현재 세션 확인
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
