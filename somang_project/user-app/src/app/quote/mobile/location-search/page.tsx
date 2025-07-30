@@ -86,10 +86,46 @@ export default function LocationSearchPage() {
     name?: string;
   }[]>([]);
 
-  // WebView 환경 감지 (상단으로 이동)
+  // WebView 환경 감지 (상단으로 이동) - 더 유연한 감지
   const isWebView = typeof window !== 'undefined' && 
     typeof navigator !== 'undefined' && 
-    navigator.userAgent.includes('ReactNativeWebView');
+    (navigator.userAgent.includes('ReactNativeWebView') || !!window.ReactNativeWebView);
+    
+  // 디버깅을 위한 환경 정보 출력
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = navigator.userAgent;
+      const hasReactNativeWebView = !!window.ReactNativeWebView;
+      const includesReactNativeWebView = userAgent.includes('ReactNativeWebView');
+      
+      console.log('🔍 location-search 페이지 상세 환경 체크:', {
+        userAgent: userAgent,
+        isWebView: isWebView,
+        hasReactNativeWebView: hasReactNativeWebView,
+        includesReactNativeWebView: includesReactNativeWebView,
+        location: window.location.href,
+        windowDefined: typeof window !== 'undefined',
+        navigatorDefined: typeof navigator !== 'undefined'
+      });
+      
+      // React Native에 메시지 보내기
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'debug',
+          message: 'location-search 페이지 로드됨 - isWebView: ' + isWebView + ', hasReactNativeWebView: ' + hasReactNativeWebView
+        }));
+      }
+      
+      // WebView 감지 실패 시 강제로 리스너 등록
+      if (!isWebView && hasReactNativeWebView) {
+        console.log('🚨 WebView 감지 실패했지만 ReactNativeWebView 존재 - 강제로 리스너 등록');
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'debug',
+          message: 'WebView 감지 실패 - UserAgent에 ReactNativeWebView 없음 하지만 인터페이스 존재'
+        }));
+      }
+    }
+  }, [isWebView]);
 
   // 주소를 "시/도 구/군 동" 형식으로 변환하고 동 단위인지 확인하는 함수
   const formatAddressForDong = (address: string): { display: string; full: string; isDong: boolean } => {
@@ -143,88 +179,217 @@ export default function LocationSearchPage() {
 
   // Kakao Maps SDK 동적 로딩 및 초기화
   useEffect(() => {
-    const initializeKakaoMaps = () => {
+    const initializeKakaoMaps = async () => {
+      console.log('🗺️ 카카오 SDK 초기화 시작');
+      
+      // 이미 로드되어 있는지 확인
       if (window.kakao?.maps?.services) {
+        console.log('✅ 카카오 SDK 이미 준비됨');
         setIsSdkReady(true);
+        setError(null);
         return;
       }
 
       const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_API_KEY;
+      console.log('🔑 카카오 API 키 확인:', kakaoApiKey ? '있음' : '없음');
       
       if (!kakaoApiKey) {
+        console.error('❌ 카카오 API 키 없음');
         setError("카카오 JavaScript API 키가 설정되지 않았습니다.");
         return;
       }
 
+      // 기존 스크립트 제거 후 재로드 (WebView 환경에서 더 안정적)
       const existingScript = document.getElementById('kakao-maps-sdk');
       if (existingScript) {
-        return;
+        console.log('🔄 기존 카카오 스크립트 제거 후 재로드');
+        existingScript.remove();
       }
 
       const script = document.createElement('script');
       script.id = 'kakao-maps-sdk';
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
-      script.async = true;
+      script.async = false; // WebView에서 더 안정적
       
       script.onload = () => {
+        console.log('🗺️ 카카오 스크립트 로드 완료');
+        
         if (window.kakao?.maps) {
-          window.kakao.maps.load(() => {
-            if (window.kakao.maps.services) {
-              setIsSdkReady(true);
-              setError(null);
-            } else {
-              setError("지도 서비스를 불러올 수 없습니다.");
-            }
-          });
+          console.log('🗺️ window.kakao.maps 발견, load() 호출');
+          
+          try {
+            window.kakao.maps.load(() => {
+              console.log('🗺️ kakao.maps.load() 콜백 실행');
+              
+              if (window.kakao.maps.services) {
+                console.log('✅ 카카오 서비스 준비 완료');
+                setIsSdkReady(true);
+                setError(null);
+              } else {
+                console.error('❌ kakao.maps.services 없음');
+                setError("지도 서비스를 불러올 수 없습니다.");
+              }
+            });
+          } catch (loadError) {
+            console.error('❌ kakao.maps.load() 오류:', loadError);
+            setError("지도 서비스 초기화 중 오류가 발생했습니다.");
+          }
         } else {
+          console.error('❌ window.kakao.maps 없음');
           setError("지도 라이브러리를 불러올 수 없습니다.");
         }
       };
       
-      script.onerror = () => {
-        setError("카카오 지도 스크립트 로딩에 실패했습니다. API 키를 확인해주세요.");
+      script.onerror = (error) => {
+        console.error('❌ 카카오 스크립트 로드 실패:', error);
+        setError("카카오 지도 스크립트 로딩에 실패했습니다. 네트워크 연결을 확인해주세요.");
       };
 
+      console.log('📤 카카오 스크립트 DOM에 추가');
       document.head.appendChild(script);
+      
+      // 타임아웃 설정 (20초)
+      setTimeout(() => {
+        if (!window.kakao?.maps?.services) {
+          console.error('⏰ 카카오 SDK 로딩 타임아웃');
+          setError("지도 서비스 로딩 시간이 초과되었습니다. 페이지를 새로고침해주세요.");
+        }
+      }, 20000);
     };
 
-    const timer = setTimeout(initializeKakaoMaps, 100);
-    return () => clearTimeout(timer);
+    // 즉시 실행
+    initializeKakaoMaps();
+    
+    // WebView 환경에서는 재시도 로직 추가
+    const isWebView = typeof window !== 'undefined' && 
+      typeof navigator !== 'undefined' && 
+      (navigator.userAgent.includes('ReactNativeWebView') || !!window.ReactNativeWebView);
+      
+    if (isWebView) {
+      console.log('🔄 WebView 환경 - 5초 후 재시도 설정');
+      const retryTimer = setTimeout(() => {
+        if (!window.kakao?.maps?.services) {
+          console.log('🔄 WebView 환경 - SDK 재시도');
+          initializeKakaoMaps();
+        }
+      }, 5000);
+      
+      return () => clearTimeout(retryTimer);
+    }
   }, []);
 
-  // 네이티브 위치 정보 응답 처리
+  // 네이티브 위치 정보 응답 처리 - 강제 실행
   useEffect(() => {
-    if (isWebView) {
-      const handleMessage = (event: MessageEvent) => {
-        try {
-          const data = event.data;
-          console.log('📱 React Native로부터 메시지 받음:', data);
-          
-          if (data.type === 'native-location-success') {
-            console.log('📍 네이티브 위치 정보 성공:', data.latitude, data.longitude);
-            processLocationCoordinates(data.latitude, data.longitude);
-          } else if (data.type === 'native-location-error') {
-            console.error('❌ 네이티브 위치 정보 실패:', data.error);
-            setError(data.error);
-            setIsLoading(false);
+    console.log('🚀 location-search useEffect 실행됨!');
+    console.log('🔍 isWebView 값:', isWebView);
+    console.log('🔍 window 존재:', typeof window !== 'undefined');
+    console.log('🔍 ReactNativeWebView 존재:', !!(window as any).ReactNativeWebView);
+    
+    // WebView 환경이든 아니든 일단 리스너 등록 (디버깅용)
+    console.log('🔧 메시지 리스너 강제 등록 시작');
+    
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        console.log('📱🚨 메시지 이벤트 수신됨!');
+        console.log('📱 메시지 이벤트 전체:', event);
+        console.log('📱 메시지 origin:', event.origin);
+        console.log('📱 메시지 source:', event.source);
+        console.log('📱 메시지 데이터 타입:', typeof event.data);
+        console.log('📱 메시지 데이터:', event.data);
+        
+        // 문자열인 경우 파싱 시도
+        let data = event.data;
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+            console.log('📱 파싱된 데이터:', data);
+          } catch (e) {
+            console.log('📱 JSON 파싱 실패, 원본 사용');
           }
-        } catch (error) {
-          console.error('메시지 처리 오류:', error);
         }
-      };
+        
+        if (data && data.type === 'native-location-success') {
+          console.log('🎉 네이티브 위치 정보 성공 감지!:', data.latitude, data.longitude);
+          processLocationCoordinates(data.latitude, data.longitude);
+        } else if (data && data.type === 'native-location-error') {
+          console.error('❌ 네이티브 위치 정보 실패:', data.error);
+          setError(data.error);
+          setIsLoading(false);
+        } else if (data && data.type === 'test-message') {
+          console.log('🧪 테스트 메시지 수신 성공!');
+        } else {
+          console.log('📱 다른 타입의 메시지:', data?.type);
+        }
+      } catch (error) {
+        console.error('🔴 메시지 처리 오류:', error);
+      }
+    };
 
-      window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
-    }
-  }, [isWebView, isSdkReady]);
+    // 글로벌 메시지 이벤트 리스너도 추가
+    const globalMessageHandler = (event: any) => {
+      console.log('🌍 글로벌 메시지 이벤트:', event);
+      handleMessage(event);
+    };
+
+    window.addEventListener('message', handleMessage);
+    document.addEventListener('message', globalMessageHandler);
+    
+    // 글로벌 변수 폴링 (방법 3 대응)
+    const checkGlobalVariable = () => {
+      const globalData = (window as any).__NATIVE_LOCATION_DATA__;
+      if (globalData && globalData.type === 'native-location-success') {
+        console.log('🌍 글로벌 변수에서 위치 정보 발견!', globalData);
+        processLocationCoordinates(globalData.latitude, globalData.longitude);
+        // 사용된 데이터 제거
+        delete (window as any).__NATIVE_LOCATION_DATA__;
+      }
+    };
+    
+    // 1초마다 글로벌 변수 확인
+    const globalCheckInterval = setInterval(checkGlobalVariable, 1000);
+    
+    // 테스트용 - 3초 후에 수동으로 이벤트 발생시켜 리스너 작동 확인
+    setTimeout(() => {
+      console.log('🧪 테스트 메시지 이벤트 발생');
+      const testEvent = new MessageEvent('message', {
+        data: { type: 'test-message', test: true }
+      });
+      window.dispatchEvent(testEvent);
+    }, 3000);
+
+    console.log('✅ 메시지 리스너 강제 등록 완료');
+    
+    return () => {
+      console.log('🧹 메시지 리스너 정리');
+      window.removeEventListener('message', handleMessage);
+      document.removeEventListener('message', globalMessageHandler);
+      clearInterval(globalCheckInterval);
+    };
+  }, []); // 의존성 배열 제거 - 한 번만 실행
 
   // 위치 좌표를 받아서 주소로 변환하는 공통 함수
-  const processLocationCoordinates = (latitude: number, longitude: number) => {
-    if (!isSdkReady) {
+  const processLocationCoordinates = useCallback((latitude: number, longitude: number) => {
+    console.log('🎯 processLocationCoordinates 호출됨:', latitude, longitude);
+    console.log('🔍 isSdkReady 상태:', isSdkReady);
+    console.log('🔍 window.kakao?.maps?.services 상태:', !!window.kakao?.maps?.services);
+    
+    // SDK가 준비되지 않았지만 kakao 객체가 있으면 강제로 사용 시도
+    if (!isSdkReady && !window.kakao?.maps?.services) {
+      console.log('❌ SDK 준비되지 않음');
       setError("지도 서비스가 아직 준비되지 않았습니다.");
       setIsLoading(false);
       return;
     }
+    
+    // SDK 상태와 관계없이 kakao 객체가 있으면 진행
+    if (!window.kakao?.maps?.services) {
+      console.log('❌ kakao.maps.services 없음');
+      setError("지도 서비스를 사용할 수 없습니다.");
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('✅ 카카오 서비스 사용 가능 - geocoding 시작');
 
     try {
       const geocoder = new window.kakao.maps.services.Geocoder();
@@ -326,7 +491,64 @@ export default function LocationSearchPage() {
       setError("주소 변환 중 오류가 발생했습니다.");
       setIsLoading(false);
     }
-  };
+  }, [isSdkReady]);
+
+  // 네이티브에서 사용할 함수들을 전역에 노출
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // 위치 처리 함수
+      (window as any).processLocationCoordinates = processLocationCoordinates;
+      
+      // 상태 관리 함수들
+      (window as any).setLocationLoading = (loading: boolean) => {
+        console.log('🔄 네이티브에서 로딩 상태 변경:', loading);
+        setIsLoading(loading);
+      };
+      
+      (window as any).setLocationError = (errorMsg: string) => {
+        console.log('❌ 네이티브에서 에러 상태 설정:', errorMsg);
+        setError(errorMsg);
+        setIsLoading(false);
+      };
+      
+      (window as any).clearLocationStates = () => {
+        console.log('🧹 네이티브에서 상태 초기화');
+        setIsLoading(false);
+        setError(null);
+        setSearchTerm('');
+        setSearchResults([]);
+        setMyNeighborhood(null);
+        setNearbyLocations([]);
+      };
+      
+      (window as any).setSdkReady = (ready: boolean) => {
+        console.log('🗺️ 네이티브에서 SDK 상태 변경:', ready);
+        setIsSdkReady(ready);
+        if (ready) {
+          setError(null);
+        }
+      };
+      
+      (window as any).getSdkStatus = () => {
+        return {
+          isSdkReady,
+          hasKakaoMaps: !!window.kakao?.maps?.services
+        };
+      };
+      
+      console.log('✅ 네이티브 통신 함수들 전역 노출 완료');
+      
+      return () => {
+        delete (window as any).processLocationCoordinates;
+        delete (window as any).setLocationLoading;
+        delete (window as any).setLocationError;
+        delete (window as any).clearLocationStates;
+        delete (window as any).setSdkReady;
+        delete (window as any).getSdkStatus;
+        console.log('🧹 네이티브 통신 함수들 전역 정리');
+      };
+    }
+  }, [processLocationCoordinates]);
 
   // 페이지 로드 시 자동으로 현재 위치 가져오기
   useEffect(() => {
@@ -666,15 +888,33 @@ export default function LocationSearchPage() {
 
   // 수동 현재 위치 불러오기 핸들러 (버튼 클릭 시)
   const handleManualFetchCurrentLocation = () => {
+    console.log('🎯 handleManualFetchCurrentLocation 호출됨');
+    
+    // 실시간 WebView 환경 감지 (더 정확한 감지)
+    const isCurrentlyWebView = typeof window !== 'undefined' && 
+      typeof navigator !== 'undefined' && 
+      (navigator.userAgent.includes('ReactNativeWebView') || !!window.ReactNativeWebView);
+      
+    console.log('🔍 상세 환경 정보:', {
+      isWebView: isWebView,
+      isCurrentlyWebView: isCurrentlyWebView,
+      userAgent: navigator.userAgent,
+      hasReactNativeWebView: !!window.ReactNativeWebView,
+      isSdkReady: isSdkReady,
+      windowLocation: window.location.href
+    });
+    
     if (!isSdkReady) {
       setError("지도 서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
     // 모바일 앱(WebView) 환경에서는 네이티브 위치 정보 사용
-    if (isWebView) {
-      console.log('📱 모바일 앱 환경 - 네이티브 위치 정보 요청');
+    if (isCurrentlyWebView) {
+      console.log('📱🚨 모바일 앱 환경 확정 - 네이티브 위치 정보 요청으로 진행');
       console.log('🔍 window.ReactNativeWebView 존재:', !!window.ReactNativeWebView);
+      
+      // 상태 초기화
       setIsLoading(true);
       setError(null);
       setSearchTerm(''); 
@@ -689,16 +929,22 @@ export default function LocationSearchPage() {
         });
         console.log('📤 React Native로 메시지 전송:', message);
         window.ReactNativeWebView.postMessage(message);
+        console.log('✅🛑 네이티브 위치 요청 완료 - 함수 완전 종료 (브라우저 Geolocation 절대 호출 안함)');
+        return; // 여기서 함수 종료 - 브라우저 Geolocation 호출하지 않음
       } else {
-        console.error('❌ window.ReactNativeWebView가 없습니다!');
+        console.error('❌ window.ReactNativeWebView가 없어서 네이티브 요청 실패');
         setError('모바일 앱과 통신할 수 없습니다.');
         setIsLoading(false);
+        return;
       }
-      return;
     }
 
     // 일반 브라우저 환경에서는 기존 Geolocation API 사용
+    console.log('🌐🚨 브라우저 환경 확정 - 브라우저 Geolocation API 사용');
+    console.log('🌐 navigator.geolocation 존재:', !!navigator.geolocation);
+    
     if (!navigator.geolocation) {
+      console.error('❌ navigator.geolocation이 지원되지 않음');
       setError('이 브라우저에서는 위치 정보가 지원되지 않습니다.');
       return;
     }
@@ -716,12 +962,13 @@ export default function LocationSearchPage() {
       maximumAge: 300000
     };
 
-    console.log('수동 Geolocation 요청 시작...');
+    console.log('🌐🚨 브라우저 Geolocation API 호출 시작...');
+    console.log('🔍 getCurrentPosition 호출 직전');
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log('수동 위치 획득 성공:', latitude, longitude);
+        console.log('🌐✅ 브라우저 위치 획득 성공:', latitude, longitude);
         
         try {
           const geocoder = new window.kakao.maps.services.Geocoder();
@@ -826,7 +1073,10 @@ export default function LocationSearchPage() {
         }
       },
       (geoError) => {
-        console.error('수동 Geolocation 오류:', geoError);
+        console.error('🌐❌ 브라우저 Geolocation 오류 발생:', geoError);
+        console.error('🌐❌ 에러 코드:', geoError.code);
+        console.error('🌐❌ 에러 메시지:', geoError.message);
+        console.error('🌐❌ 이 오류는 브라우저 환경에서만 발생해야 함');
         let errorMessage = '위치 정보를 가져오는 중 오류가 발생했습니다.';
         
         switch (geoError.code) {
