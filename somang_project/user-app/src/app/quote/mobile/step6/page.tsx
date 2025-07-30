@@ -1,7 +1,7 @@
 // /src/app/quote/mobile/step6/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuote } from '@/context/QuoteContext';
 import { supabase } from '@/lib/supabase/client';
@@ -39,29 +39,8 @@ export default function MobileQuoteStep6Page() {
     loadDevices();
   }, []);
 
-  // 필터링 로직
-  useEffect(() => {
-    filterDevices();
-  }, [devices, searchTerm, selectedFilter, selectedTag, filterDevices]);
-
-  const loadDevices = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('devices')
-        .select('*')
-        .is('deleted_at', null)
-        .order('device_name');
-
-      if (error) throw error;
-      setDevices(data || []);
-    } catch (error) {
-      console.error('디바이스 로드 실패:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterDevices = () => {
+  // 필터링 함수를 useCallback으로 정의
+  const filterDevices = useCallback(() => {
     let filtered = [...devices];
 
     // 검색어 필터
@@ -90,16 +69,43 @@ export default function MobileQuoteStep6Page() {
       });
     }
 
-    // 태그 필터 (예시)
+    // 태그 필터
     if (selectedTag === 'premium') {
       filtered = filtered.filter(device => 
         device.device_name.includes('Ultra') || 
         device.device_name.includes('Pro') || 
         device.device_name.includes('Fold')
       );
+    } else if (selectedTag === 'popular') {
+      filtered = filtered.filter(device => 
+        device.device_name.includes('iPhone') || 
+        device.device_name.includes('Galaxy S')
+      );
     }
 
     setFilteredDevices(filtered);
+  }, [devices, searchTerm, selectedFilter, selectedTag]);
+
+  // 필터링 로직
+  useEffect(() => {
+    filterDevices();
+  }, [filterDevices]);
+
+  const loadDevices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .is('deleted_at', null)
+        .order('device_name');
+
+      if (error) throw error;
+      setDevices(data || []);
+    } catch (error) {
+      console.error('디바이스 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeviceSelect = (device: Device) => {

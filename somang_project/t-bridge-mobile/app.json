@@ -7,12 +7,30 @@
     "userInterfaceStyle": "light",
     "scheme": "tbridge",
     "platforms": ["ios", "android", "web"],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "이 앱은 견적 요청 시 위치 정보를 사용합니다.",
+          "locationAlwaysPermission": "이 앱은 견적 요청 시 위치 정보를 사용합니다.",
+          "locationWhenInUsePermission": "이 앱은 견적 요청 시 위치 정보를 사용합니다."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tbridge.mobile"
+      "bundleIdentifier": "com.tbridge.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "이 앱은 견적 요청 시 위치 정보를 사용합니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "이 앱은 견적 요청 시 위치 정보를 사용합니다."
+      }
     },
     "android": {
-      "package": "com.tbridge.mobile"
+      "package": "com.tbridge.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     }
   }
 }

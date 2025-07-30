@@ -4,6 +4,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Alert, Linking, Platform, Bac
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
+import * as Location from 'expo-location';
 import { supabase } from './src/lib/supabase';
 
 function AppContent() {
@@ -11,6 +12,83 @@ function AppContent() {
   const [webUrl, setWebUrl] = React.useState<string>('http://192.168.0.123:50331/login'); // HTTP로 변경 (SSL 문제 회피)
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
+
+  // 네이티브 위치 정보 요청 처리 함수
+  const handleLocationRequest = async () => {
+    try {
+      console.log('📍 위치 권한 요청 시작...');
+      
+      // 현재 권한 상태 확인
+      let { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      console.log('📍 현재 권한 상태:', existingStatus);
+      
+      let finalStatus = existingStatus;
+      
+      // 권한이 없으면 요청
+      if (existingStatus !== 'granted') {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        finalStatus = status;
+        console.log('📍 권한 요청 결과:', status);
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.error('❌ 위치 권한이 거부되었습니다');
+        
+        // WebView에 에러 메시지 전송
+        const errorScript = `
+          window.postMessage({
+            type: 'native-location-error',
+            error: '위치 권한이 거부되었습니다. 앱 설정에서 위치 권한을 허용해주세요.'
+          }, '*');
+        `;
+        webViewRef.current?.injectJavaScript(errorScript);
+        return;
+      }
+
+      console.log('✅ 위치 권한 획득, 현재 위치 조회 시작...');
+      
+      // 현재 위치 조회
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        distanceInterval: 10,
+      });
+
+      const { latitude, longitude } = location.coords;
+      console.log('📍 네이티브 위치 조회 성공:', latitude, longitude);
+
+      // WebView에 위치 정보 전송
+      const locationScript = `
+        window.postMessage({
+          type: 'native-location-success',
+          latitude: ${latitude},
+          longitude: ${longitude}
+        }, '*');
+      `;
+      webViewRef.current?.injectJavaScript(locationScript);
+
+    } catch (error) {
+      console.error('❌ 네이티브 위치 조회 실패:', error);
+      console.error('❌ 오류 타입:', typeof error);
+      console.error('❌ 오류 상세:', JSON.stringify(error, null, 2));
+      
+      let errorMessage = '알 수 없는 오류';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
+      // WebView에 에러 메시지 전송
+      const errorScript = `
+        window.postMessage({
+          type: 'native-location-error',
+          error: '위치 정보를 가져오는 중 오류가 발생했습니다: ${errorMessage}'
+        }, '*');
+      `;
+      webViewRef.current?.injectJavaScript(errorScript);
+    }
+  };
 
   React.useEffect(() => {
     // 현재 세션 확인
@@ -115,10 +193,7 @@ function AppContent() {
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
         // SSL 인증서 무시 및 보안 설정
-        androidHardwareAccelerationDisabled={true}
-        mixedContentMode={'always'}  
-        allowsUnsecureHttps={true}
-        ignoreSslError={true}
+        mixedContentMode={'always'}
         // 쿠키 및 세션 저장 허용
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
@@ -128,10 +203,7 @@ function AppContent() {
         cacheEnabled={false}
         incognito={false}
         // 추가 보안 설정 무시
-        allowsProtectedMedia={true}
         allowFileAccess={true}
-        allowFileAccessFromFileURLs={true}
-        allowUniversalAccessFromFileURLs={true}
         onError={(syntheticEvent) => {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView 에러:', nativeEvent);
@@ -268,6 +340,20 @@ function AppContent() {
             
             if (message.type === 'debug') {
               console.log('🐛 Debug:', message.message);
+              return;
+            }
+            
+            // 네이티브 위치 정보 요청 처리
+            if (message.type === 'request-native-location') {
+              console.log('📍 네이티브 위치 정보 요청 받음');
+              console.log('🔍 handleLocationRequest 함수 존재:', typeof handleLocationRequest);
+              
+              // handleLocationRequest가 정의되어 있는지 확인
+              if (typeof handleLocationRequest === 'function') {
+                handleLocationRequest();
+              } else {
+                console.error('❌ handleLocationRequest 함수가 정의되지 않았습니다!');
+              }
               return;
             }
             

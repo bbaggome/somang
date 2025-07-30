@@ -31,6 +31,9 @@ interface KakaoAddressResult {
 
 declare global {
   interface Window {
+    ReactNativeWebView?: {
+      postMessage: (message: string) => void;
+    };
     kakao: {
       maps: {
         services: {
@@ -83,21 +86,33 @@ export default function LocationSearchPage() {
     name?: string;
   }[]>([]);
 
+  // WebView 환경 감지 (상단으로 이동)
+  const isWebView = typeof window !== 'undefined' && 
+    typeof navigator !== 'undefined' && 
+    navigator.userAgent.includes('ReactNativeWebView');
+
   // 주소를 "시/도 구/군 동" 형식으로 변환하고 동 단위인지 확인하는 함수
   const formatAddressForDong = (address: string): { display: string; full: string; isDong: boolean } => {
     if (!address) return { display: address, full: address, isDong: false };
     
     const parts = address.split(' ').filter(Boolean);
     
-    if (parts.length >= 3) {
-      const lastPart = parts[2];
-      // 동/읍/면으로 끝나는지 확인
-      const isDong = /[동읍면]$/.test(lastPart);
-      
-      if (isDong) {
-        const display = parts.slice(0, 3).join(' ');
-        return { display, full: address, isDong: true };
+    // 동/읍/면이 포함된 부분을 찾아서 그 레벨까지 추출
+    for (let i = 0; i < parts.length; i++) {
+      if (/[동읍면]$/.test(parts[i])) {
+        // 시/도 구/군 동 형태로 추출 (최소 3단계)
+        const dongLevel = Math.max(i + 1, 3);
+        if (parts.length >= dongLevel) {
+          const display = parts.slice(0, dongLevel).join(' ');
+          return { display, full: address, isDong: true };
+        }
       }
+    }
+    
+    // 동/읍/면이 없으면 구/군 레벨까지만 표시
+    if (parts.length >= 3) {
+      const display = parts.slice(0, 3).join(' ');
+      return { display, full: address, isDong: false };
     }
     
     return { display: address, full: address, isDong: false };
@@ -177,11 +192,164 @@ export default function LocationSearchPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // 네이티브 위치 정보 응답 처리
+  useEffect(() => {
+    if (isWebView) {
+      const handleMessage = (event: MessageEvent) => {
+        try {
+          const data = event.data;
+          console.log('📱 React Native로부터 메시지 받음:', data);
+          
+          if (data.type === 'native-location-success') {
+            console.log('📍 네이티브 위치 정보 성공:', data.latitude, data.longitude);
+            processLocationCoordinates(data.latitude, data.longitude);
+          } else if (data.type === 'native-location-error') {
+            console.error('❌ 네이티브 위치 정보 실패:', data.error);
+            setError(data.error);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error('메시지 처리 오류:', error);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+    }
+  }, [isWebView, isSdkReady]);
+
+  // 위치 좌표를 받아서 주소로 변환하는 공통 함수
+  const processLocationCoordinates = (latitude: number, longitude: number) => {
+    if (!isSdkReady) {
+      setError("지도 서비스가 아직 준비되지 않았습니다.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const geocoder = new window.kakao.maps.services.Geocoder();
+
+      geocoder.coord2Address(longitude, latitude, (result: KakaoAddressResult[], status: string) => {
+        console.log('네이티브 위치 Geocoding 결과:', status, result);
+        
+        if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+          const addressData = result[0];
+          console.log('네이티브 위치 주소 데이터:', addressData);
+          
+          // 지번 주소를 우선으로 사용 (행정동 정보가 더 정확함)
+          let primaryAddress = '';
+          
+          if (addressData.address && addressData.address.address_name) {
+            primaryAddress = addressData.address.address_name;
+            console.log('네이티브 위치 지번 주소 사용:', primaryAddress);
+          } else if (addressData.road_address && addressData.road_address.address_name) {
+            primaryAddress = addressData.road_address.address_name;
+            console.log('네이티브 위치 도로명 주소 사용:', primaryAddress);
+          }
+
+          if (primaryAddress) {
+            // 주소에서 동 정보 추출
+            console.log('네이티브 위치 원본 주소:', primaryAddress);
+            const formatted = formatAddressForDong(primaryAddress);
+            console.log('네이티브 위치 포맷팅된 주소:', formatted);
+            
+            if (formatted.display) {
+              setMyNeighborhood(formatted);
+              
+              // 근처 지역 검색을 위해 Places 검색 사용
+              const ps = new window.kakao.maps.services.Places();
+              
+              // 주변 지역을 키워드 검색으로 찾기 (구/군 단위로 검색)
+              const addressParts = formatted.display.split(' ');
+              const searchQuery = addressParts.length >= 2 ? `${addressParts[1]} 동` : `${addressParts[0]} 동`;
+              console.log('네이티브 위치 근처 지역 검색:', searchQuery);
+              
+              ps.keywordSearch(searchQuery, (data: KakaoPlace[], catStatus: string) => {
+                console.log('네이티브 위치 근처 지역 검색 결과:', catStatus, data);
+                
+                if (catStatus === window.kakao.maps.services.Status.OK && data.length > 0) {
+                  const nearbyFormatted = data
+                    .filter(place => {
+                      // 행정동인지 확인
+                      const placeName = place.place_name || '';
+                      const placeAddress = place.address_name || '';
+                      
+                      // 동으로 끝나는 장소만 필터링
+                      return /[동읍면]$/.test(placeName) || /[동읍면]/.test(placeAddress);
+                    })
+                    .map(place => {
+                      const placeAddress = place.address_name || '';
+                      return formatAddressForDong(placeAddress);
+                    })
+                    .filter(location => 
+                      location && 
+                      location.isDong && // 동 단위인 것만
+                      location.display !== formatted.display && // 현재 위치와 다른 것만
+                      location.display.includes(addressParts[0]) && // 같은 시/도
+                      (addressParts.length >= 2 ? location.display.includes(addressParts[1]) : true) // 같은 구/군
+                    )
+                    .filter((location, index, arr) => 
+                      // 중복 제거
+                      arr.findIndex(l => l && l.display === location!.display) === index
+                    )
+                    .slice(0, 9);
+                  
+                  console.log('네이티브 위치 필터링된 근처 지역:', nearbyFormatted);
+                  setNearbyLocations(nearbyFormatted);
+                } else {
+                  // 검색 결과가 없으면 빈 배열 설정
+                  setNearbyLocations([]);
+                }
+                setIsLoading(false);
+              }, { 
+                location: new window.kakao.maps.LatLng(latitude, longitude), 
+                radius: 5000 // 5km로 확장
+              });
+            } else {
+              console.error('네이티브 위치 주소 파싱 실패:', primaryAddress);
+              setError("주소 형식을 인식할 수 없습니다.");
+              setIsLoading(false);
+            }
+          } else {
+            console.error('네이티브 위치 주소 정보 없음');
+            setError("주소 정보를 처리할 수 없습니다.");
+            setIsLoading(false);
+          }
+        } else {
+          console.error('네이티브 위치 Geocoding 실패:', status);
+          setError("현재 주소를 가져오지 못했습니다. 다시 시도해주세요.");
+          setIsLoading(false);
+        }
+      });
+    } catch (error) {
+      console.error('네이티브 위치 Geocoding 오류:', error);
+      setError("주소 변환 중 오류가 발생했습니다.");
+      setIsLoading(false);
+    }
+  };
+
   // 페이지 로드 시 자동으로 현재 위치 가져오기
   useEffect(() => {
     if (isSdkReady && !myNeighborhood && !isAutoLocating) {
-      console.log('SDK 준비 완료, 자동 위치 조회 시작');
-      handleAutoFetchCurrentLocation();
+      console.log('SDK 준비 완료');
+      
+      // 모든 환경에서 자동 위치 조회 비활성화
+      // 사용자가 버튼을 클릭해야만 위치 권한 요청 가능
+      console.log('🔒 자동 위치 조회 비활성화 - 사용자 상호작용 필요');
+      
+      // 기존에 권한이 있는 경우에만 자동 조회 (HTTPS 환경에서만)
+      if (!isWebView && window.location.protocol === 'https:' && navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          if (result.state === 'granted') {
+            console.log('✅ 위치 권한 이미 허용됨 - 자동 조회 시작');
+            handleAutoFetchCurrentLocation();
+          } else {
+            console.log('❌ 위치 권한 없음 - 사용자가 버튼을 클릭해야 함');
+          }
+        }).catch(() => {
+          console.log('⚠️ 권한 API 사용 불가 - 자동 조회 스킵');
+        });
+      }
     }
   }, [isSdkReady]);
 
@@ -236,26 +404,20 @@ export default function LocationSearchPage() {
 
               if (primaryAddress) {
                 // 주소에서 동 정보 추출
-                const addressParts = primaryAddress.split(' ');
-                console.log('자동 주소 파츠:', addressParts);
+                console.log('자동 원본 주소:', primaryAddress);
+                const formatted = formatAddressForDong(primaryAddress);
+                console.log('자동 포맷팅된 주소:', formatted);
                 
-                if (addressParts.length >= 3) {
-                  // 시/도 구/군 동 형태로 조합
-                  const dongAddress = addressParts.slice(0, 3).join(' ');
-                  console.log('자동 동 주소:', dongAddress);
-                  
-                  const formatted = {
-                    display: dongAddress,
-                    full: primaryAddress
-                  };
+                if (formatted.display) {
                   
                   setMyNeighborhood(formatted);
                   
                   // 근처 지역 검색을 위해 Places 검색 사용
                   const ps = new window.kakao.maps.services.Places();
                   
-                  // 주변 지역을 키워드 검색으로 찾기
-                  const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
+                  // 주변 지역을 키워드 검색으로 찾기 (구/군 단위로 검색)
+                  const addressParts = formatted.display.split(' ');
+                  const searchQuery = addressParts.length >= 2 ? `${addressParts[1]} 동` : `${addressParts[0]} 동`;
                   console.log('자동 근처 지역 검색:', searchQuery);
                   
                   ps.keywordSearch(searchQuery, (data: KakaoPlace[], catStatus: string) => {
@@ -273,22 +435,14 @@ export default function LocationSearchPage() {
                         })
                         .map(place => {
                           const placeAddress = place.address_name || '';
-                          const placeParts = placeAddress.split(' ');
-                          
-                          if (placeParts.length >= 3) {
-                            const dongName = placeParts.slice(0, 3).join(' ');
-                            return {
-                              display: dongName,
-                              full: placeAddress
-                            };
-                          }
-                          return null;
+                          return formatAddressForDong(placeAddress);
                         })
                         .filter(location => 
                           location && 
-                          location.display !== dongAddress && // 현재 위치와 다른 것만
+                          location.isDong && // 동 단위인 것만
+                          location.display !== formatted.display && // 현재 위치와 다른 것만
                           location.display.includes(addressParts[0]) && // 같은 시/도
-                          location.display.includes(addressParts[1]) // 같은 구/군
+                          (addressParts.length >= 2 ? location.display.includes(addressParts[1]) : true) // 같은 구/군
                         )
                         .filter((location, index, arr) => 
                           // 중복 제거
@@ -346,11 +500,16 @@ export default function LocationSearchPage() {
       
       // 먼저 일반 키워드 검색
       ps.keywordSearch(term, (data: KakaoPlace[], status: string) => {
+        console.log(`🔍 "${term}" 검색 결과:`, status, data.length, '개');
+        console.log('검색된 장소들:', data.map(p => ({ name: p.place_name, address: p.address_name, road: p.road_address_name })));
+        
         if (status === window.kakao.maps.services.Status.OK) {
           const processedResults = data
             .filter(place => {
               // 1. 동네인지 확인
-              if (!isNeighborhoodPlace(place)) return false;
+              const isNeighborhood = isNeighborhoodPlace(place);
+              console.log(`🏘️ ${place.place_name} 동네인가?`, isNeighborhood);
+              if (!isNeighborhood) return false;
               
               // 2. 주소에서 동 단위 추출 가능한지 확인
               const roadAddress = place.road_address_name || '';
@@ -359,18 +518,25 @@ export default function LocationSearchPage() {
               const roadFormatted = formatAddressForDong(roadAddress);
               const jibunFormatted = formatAddressForDong(jibunAddress);
               
+              console.log(`🗺️ ${place.place_name} 주소 분석:`, {
+                jibun: jibunAddress,
+                road: roadAddress,
+                jibunFormatted,
+                roadFormatted
+              });
+              
               return roadFormatted.isDong || jibunFormatted.isDong;
             })
             .map(place => {
-              // 도로명 주소를 우선으로, 동 단위 추출
-              const roadAddress = place.road_address_name || '';
+              // 지번 주소를 우선으로 사용 (행정동 정보가 더 정확함)
               const jibunAddress = place.address_name || '';
+              const roadAddress = place.road_address_name || '';
               
-              const roadFormatted = formatAddressForDong(roadAddress);
               const jibunFormatted = formatAddressForDong(jibunAddress);
+              const roadFormatted = formatAddressForDong(roadAddress);
               
-              // 동 단위가 추출되는 주소를 우선 사용
-              const primaryFormatted = roadFormatted.isDong ? roadFormatted : jibunFormatted;
+              // 동 단위가 추출되는 주소를 우선 사용 (지번 주소 우선)
+              const primaryFormatted = jibunFormatted.isDong ? jibunFormatted : roadFormatted;
               
               return {
                 id: place.id,
@@ -379,49 +545,86 @@ export default function LocationSearchPage() {
                 name: place.place_name
               };
             })
-            // 중복 제거 (같은 display 주소가 있으면 하나만 유지)
+            // 중복 제거 (동 단위로 그룹핑)
             .filter((place, index, arr) => 
               arr.findIndex(p => p.display === place.display) === index
             );
           
-          // 동 이름으로 직접 검색도 추가 수행
-          if (processedResults.length < 5 && term.length >= 2) {
-            // "동" 키워드를 추가해서 재검색
-            const dongSearchTerm = term.includes('동') ? term : `${term}동`;
-            ps.keywordSearch(dongSearchTerm, (dongData: KakaoPlace[], dongStatus: string) => {
-              if (dongStatus === window.kakao.maps.services.Status.OK) {
-                const additionalResults = dongData
-                  .filter(place => isNeighborhoodPlace(place))
-                  .map(place => {
-                    const roadAddress = place.road_address_name || '';
-                    const jibunAddress = place.address_name || '';
-                    
-                    const roadFormatted = formatAddressForDong(roadAddress);
-                    const jibunFormatted = formatAddressForDong(jibunAddress);
-                    
-                    const primaryFormatted = roadFormatted.isDong ? roadFormatted : jibunFormatted;
-                    
-                    return {
-                      id: `dong-${place.id}`,
-                      display: primaryFormatted.display,
-                      full: primaryFormatted.full,
-                      name: place.place_name
-                    };
-                  })
-                  .filter(place => 
-                    // 이미 있는 결과와 중복되지 않는 것만 추가
-                    !processedResults.some(existing => existing.display === place.display)
-                  );
-                
+          console.log('🎯 최종 처리된 결과:', processedResults);
+          
+          // 추가 검색 수행 (더 넓은 범위로 검색)
+          if (term.length >= 2) {
+            const searchQueries = [];
+            
+            // 1. "동" 키워드 추가 검색
+            if (!term.includes('동')) {
+              searchQueries.push(`${term}동`);
+            }
+            
+            // 2. 주요 시/군 + 검색어 조합 (화성시 오산동 등을 찾기 위해)
+            const majorCities = ['경기 화성시', '경기 수원시', '경기 용인시', '경기 성남시', '경기 안양시'];
+            majorCities.forEach(city => {
+              if (!term.includes('동')) {
+                searchQueries.push(`${city} ${term}동`);
+              } else {
+                searchQueries.push(`${city} ${term}`);
+              }
+            });
+            
+            console.log('🔍 추가 검색 쿼리들:', searchQueries);
+            
+            let additionalResults: typeof processedResults = [];
+            let completedSearches = 0;
+            
+            const handleAdditionalSearch = () => {
+              completedSearches++;
+              if (completedSearches === searchQueries.length) {
+                // 모든 추가 검색 완료
                 const combinedResults = [...processedResults, ...additionalResults]
                   .filter((place, index, arr) => 
                     arr.findIndex(p => p.display === place.display) === index
                   );
                 
+                console.log('🎯 모든 검색 완료 후 최종 결과:', combinedResults);
                 setSearchResults(combinedResults);
-              } else {
-                setSearchResults(processedResults);
               }
+            };
+            
+            searchQueries.forEach(query => {
+              ps.keywordSearch(query, (dongData: KakaoPlace[], dongStatus: string) => {
+                console.log(`🔍 "${query}" 추가 검색 결과:`, dongStatus, dongData.length, '개');
+                
+                if (dongStatus === window.kakao.maps.services.Status.OK) {
+                  const queryResults = dongData
+                    .filter(place => isNeighborhoodPlace(place))
+                    .map(place => {
+                      const jibunAddress = place.address_name || '';
+                      const roadAddress = place.road_address_name || '';
+                      
+                      const jibunFormatted = formatAddressForDong(jibunAddress);
+                      const roadFormatted = formatAddressForDong(roadAddress);
+                      
+                      const primaryFormatted = jibunFormatted.isDong ? jibunFormatted : roadFormatted;
+                      
+                      return {
+                        id: `${query}-${place.id}`,
+                        display: primaryFormatted.display,
+                        full: primaryFormatted.full,
+                        name: place.place_name
+                      };
+                    })
+                    .filter(place => 
+                      // 이미 있는 결과와 중복되지 않는 것만 추가
+                      !processedResults.some(existing => existing.display === place.display) &&
+                      !additionalResults.some(existing => existing.display === place.display)
+                    );
+                  
+                  additionalResults = [...additionalResults, ...queryResults];
+                  console.log(`"${query}" 검색에서 추가된 결과:`, queryResults);
+                }
+                
+                handleAdditionalSearch();
+              });
             });
           } else {
             setSearchResults(processedResults);
@@ -468,6 +671,33 @@ export default function LocationSearchPage() {
       return;
     }
 
+    // 모바일 앱(WebView) 환경에서는 네이티브 위치 정보 사용
+    if (isWebView) {
+      console.log('📱 모바일 앱 환경 - 네이티브 위치 정보 요청');
+      console.log('🔍 window.ReactNativeWebView 존재:', !!window.ReactNativeWebView);
+      setIsLoading(true);
+      setError(null);
+      setSearchTerm(''); 
+      setSearchResults([]);
+      setMyNeighborhood(null);
+      setNearbyLocations([]);
+      
+      // React Native로 위치 정보 요청 메시지 전송
+      if (window.ReactNativeWebView) {
+        const message = JSON.stringify({
+          type: 'request-native-location'
+        });
+        console.log('📤 React Native로 메시지 전송:', message);
+        window.ReactNativeWebView.postMessage(message);
+      } else {
+        console.error('❌ window.ReactNativeWebView가 없습니다!');
+        setError('모바일 앱과 통신할 수 없습니다.');
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // 일반 브라우저 환경에서는 기존 Geolocation API 사용
     if (!navigator.geolocation) {
       setError('이 브라우저에서는 위치 정보가 지원되지 않습니다.');
       return;
@@ -516,26 +746,20 @@ export default function LocationSearchPage() {
 
               if (primaryAddress) {
                 // 주소에서 동 정보 추출
-                const addressParts = primaryAddress.split(' ');
-                console.log('수동 주소 파츠:', addressParts);
+                console.log('수동 원본 주소:', primaryAddress);
+                const formatted = formatAddressForDong(primaryAddress);
+                console.log('수동 포맷팅된 주소:', formatted);
                 
-                if (addressParts.length >= 3) {
-                  // 시/도 구/군 동 형태로 조합
-                  const dongAddress = addressParts.slice(0, 3).join(' ');
-                  console.log('수동 동 주소:', dongAddress);
-                  
-                  const formatted = {
-                    display: dongAddress,
-                    full: primaryAddress
-                  };
+                if (formatted.display) {
                   
                   setMyNeighborhood(formatted);
                   
                   // 근처 지역 검색을 위해 Places 검색 사용
                   const ps = new window.kakao.maps.services.Places();
                   
-                  // 주변 지역을 키워드 검색으로 찾기
-                  const searchQuery = `${addressParts[1]} 동`; // 예: "강남구 동"
+                  // 주변 지역을 키워드 검색으로 찾기 (구/군 단위로 검색)
+                  const addressParts = formatted.display.split(' ');
+                  const searchQuery = addressParts.length >= 2 ? `${addressParts[1]} 동` : `${addressParts[0]} 동`;
                   console.log('수동 근처 지역 검색:', searchQuery);
                   
                   ps.keywordSearch(searchQuery, (data: KakaoPlace[], catStatus: string) => {
@@ -553,22 +777,14 @@ export default function LocationSearchPage() {
                         })
                         .map(place => {
                           const placeAddress = place.address_name || '';
-                          const placeParts = placeAddress.split(' ');
-                          
-                          if (placeParts.length >= 3) {
-                            const dongName = placeParts.slice(0, 3).join(' ');
-                            return {
-                              display: dongName,
-                              full: placeAddress
-                            };
-                          }
-                          return null;
+                          return formatAddressForDong(placeAddress);
                         })
                         .filter(location => 
                           location && 
-                          location.display !== dongAddress && // 현재 위치와 다른 것만
+                          location.isDong && // 동 단위인 것만
+                          location.display !== formatted.display && // 현재 위치와 다른 것만
                           location.display.includes(addressParts[0]) && // 같은 시/도
-                          location.display.includes(addressParts[1]) // 같은 구/군
+                          (addressParts.length >= 2 ? location.display.includes(addressParts[1]) : true) // 같은 구/군
                         )
                         .filter((location, index, arr) => 
                           // 중복 제거
@@ -677,7 +893,7 @@ export default function LocationSearchPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              {isLoading ? '위치 찾는 중...' : (isSdkReady ? '현재 위치 다시 불러오기' : '지도 서비스 로딩 중...')}
+              {isLoading ? '위치 찾는 중...' : (isSdkReady ? '현재 위치 불러오기' : '지도 서비스 로딩 중...')}
             </button>
           </div>
           
