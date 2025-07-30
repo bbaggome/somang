@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "T-Bridge Mobile",
+    "slug": "t-bridge-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "tbridge",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tbridge.mobile"
+    },
+    "android": {
+      "package": "com.tbridge.mobile"
+    }
+  }
+}

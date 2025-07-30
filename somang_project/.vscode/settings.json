@@ -6,5 +6,19 @@
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.project.sourcePaths": [
+    "t-bridge-mobile/android/app/src/main/java"
+  ],
+  "java.project.excludePaths": [
+    "user-app/node_modules",
+    "biz-app/node_modules", 
+    "admin-app/node_modules",
+    "**/node_modules/**",
+    "**/.*/**"
+  ],
+  "files.exclude": {
+    "**/node_modules/.pnpm/**/@capacitor/**/android": true,
+    "**/node_modules/**/**/android": false
+  }
 }
