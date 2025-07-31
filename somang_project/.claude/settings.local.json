@@ -36,7 +36,14 @@
       "Bash(\"C:\\Users\\cjw92\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s \"ReactNativeJS\")",
       "Bash(\"C:\\Users\\cjw92\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -s \"AndroidRuntime:E\")",
       "Bash(taskkill:*)",
-      "Bash(eas:*)"
+      "Bash(eas:*)",
+      "Bash(if not exist \".vscode\" mkdir \".vscode\")",
+      "Bash(git restore:*)",
+      "Bash(where npm)",
+      "Bash(echo $PATH)",
+      "Bash(powershell:*)",
+      "mcp__supabase__get_anon_key",
+      "Bash(start http://localhost:8083)"
     ],
     "deny": []
   },

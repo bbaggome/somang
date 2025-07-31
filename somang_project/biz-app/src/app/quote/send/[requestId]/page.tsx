@@ -358,9 +358,70 @@ export default function QuoteSendPage() {
 
       console.log("견적 생성 성공:", quoteData);
 
-      console.log("견적 전송 완료 - Supabase Realtime을 통해 자동으로 알림이 전송됩니다");
+      // FCM 푸시 알림 전송
+      try {
+        console.log("FCM 푸시 알림 전송 시작...");
+        
+        const fcmResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-firebase-fcm-notification`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_ids: [quoteRequest.user_id], // 견적 요청한 사용자에게 알림
+            notification: {
+              title: "💼 새로운 견적이 도착했습니다!",
+              body: `${store.name}에서 ${device.device_name} 견적을 보내드렸습니다. 총 비용: ${formatCurrency(quoteDetails.tco_24months)}원`,
+              android: {
+                channel_id: "quote_notifications",
+                priority: "high",
+                sound: "default",
+                color: "#1e40af",
+                icon: "ic_notification"
+              },
+              apns: {
+                payload: {
+                  aps: {
+                    sound: "default",
+                    badge: 1
+                  }
+                }
+              }
+            },
+            data: {
+              type: "quote_received",
+              quote_id: quoteData.id,
+              request_id: requestId,
+              store_name: store.name,
+              device_name: device.device_name,
+              total_cost: quoteDetails.tco_24months.toString(),
+              timestamp: new Date().toISOString()
+            },
+            quote_data: {
+              quote_id: quoteData.id,
+              business_name: store.name,
+              amount: quoteDetails.tco_24months
+            }
+          })
+        });
+
+        const fcmResult = await fcmResponse.json();
+        
+        if (fcmResponse.ok && fcmResult.success) {
+          console.log("✅ FCM 푸시 알림 전송 성공:", fcmResult);
+          console.log(`FCM 알림 전송됨 - 성공: ${fcmResult.sent}, 실패: ${fcmResult.failed}`);
+        } else {
+          console.warn("⚠️ FCM 푸시 알림 전송 실패:", fcmResult);
+        }
+      } catch (fcmError) {
+        console.error("❌ FCM 푸시 알림 전송 오류:", fcmError);
+        // FCM 실패해도 견적 전송은 성공으로 처리
+      }
+
+      console.log("견적 전송 완료 - FCM 푸시 알림도 전송되었습니다");
       
-      alert("견적서가 성공적으로 전송되었습니다!");
+      alert("견적서가 성공적으로 전송되었습니다!\n고객에게 푸시 알림도 발송되었습니다.");
       
       // 성공 후 리다이렉트
       router.back();

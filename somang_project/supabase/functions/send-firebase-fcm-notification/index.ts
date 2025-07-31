@@ -1,6 +1,7 @@
-// supabase/functions/send-firebase-fcm-notification/index.ts - Firebase FCM V1 API 직접 사용
+// supabase/functions/send-firebase-fcm-notification/index.ts - Firebase FCM HTTP v1 API
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { create, getNumericDate } from "https://deno.land/x/djwt@v2.8/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,36 +65,56 @@ interface RequestBody {
   };
 }
 
-// Firebase Service Account JWT 생성
-async function generateFirebaseAccessToken(serviceAccountJson: string): Promise<string> {
-  const serviceAccount = JSON.parse(serviceAccountJson);
-  const now = Math.floor(Date.now() / 1000);
-  
-  // JWT 헤더
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT',
-  };
-  
-  // JWT 페이로드
+interface ServiceAccount {
+  type: string;
+  project_id: string;
+  private_key_id: string;
+  private_key: string;
+  client_email: string;
+  client_id: string;
+  auth_uri: string;
+  token_uri: string;
+  auth_provider_x509_cert_url: string;
+  client_x509_cert_url: string;
+}
+
+// Firebase OAuth2 액세스 토큰 생성
+async function getFirebaseAccessToken(serviceAccount: ServiceAccount): Promise<string> {
+  // JWT 생성
+  const iat = getNumericDate(0);
+  const exp = getNumericDate(3600); // 1시간 후
+
   const payload = {
     iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/firebase.messaging',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600, // 1시간
-    iat: now,
+    sub: serviceAccount.client_email,
+    aud: "https://oauth2.googleapis.com/token",
+    iat,
+    exp,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
   };
+
+  // Private key를 CryptoKey로 변환
+  const privateKey = serviceAccount.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\n/g, '');
+
+  const binaryKey = Uint8Array.from(atob(privateKey), c => c.charCodeAt(0));
   
-  // JWT 생성 (간단한 구현 - 실제로는 crypto 라이브러리 사용 권장)
-  const encodedHeader = btoa(JSON.stringify(header));
-  const encodedPayload = btoa(JSON.stringify(payload));
-  
-  // 실제로는 private key로 서명해야 하지만, 여기서는 간단히 처리
-  // 실제 구현시에는 crypto 라이브러리 사용 필요
-  const signature = 'signature_placeholder'; // TODO: 실제 서명 구현
-  
-  const jwt = `${encodedHeader}.${encodedPayload}.${signature}`;
-  
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    binaryKey,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    false,
+    ['sign']
+  );
+
+  // JWT 생성
+  const jwt = await create({ alg: "RS256", typ: "JWT" }, payload, cryptoKey);
+
   // OAuth2 토큰 교환
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -105,11 +126,12 @@ async function generateFirebaseAccessToken(serviceAccountJson: string): Promise<
       assertion: jwt,
     }),
   });
-  
+
   if (!tokenResponse.ok) {
-    throw new Error('Failed to get Firebase access token');
+    const error = await tokenResponse.text();
+    throw new Error(`Failed to get Firebase access token: ${error}`);
   }
-  
+
   const tokenData = await tokenResponse.json();
   return tokenData.access_token;
 }
@@ -121,13 +143,16 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log('🔥 Firebase FCM V1 알림 발송 시작')
+    console.log('🚀 Firebase FCM HTTP v1 API 알림 발송 시작')
 
-    // 환경 변수 확인 - Legacy Server Key 사용 (더 간단함)
-    const fcmServerKey = Deno.env.get('FCM_SERVER_KEY')
-    if (!fcmServerKey) {
-      throw new Error('FCM_SERVER_KEY environment variable not set')
+    // Service Account JSON 환경 변수 확인
+    const serviceAccountJson = Deno.env.get('FCM_SERVICE_ACCOUNT')
+    if (!serviceAccountJson) {
+      throw new Error('FCM_SERVICE_ACCOUNT environment variable not set')
     }
+
+    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountJson)
+    console.log('📋 Service Account 로드 완료:', serviceAccount.project_id)
 
     // Supabase 클라이언트 생성
     const supabase = createClient(
@@ -190,120 +215,134 @@ serve(async (req: Request) => {
 
     console.log('🎯 대상 Firebase FCM 토큰 수:', targetTokens.length)
 
-    // Firebase FCM 페이로드 구성 (Legacy API 사용)
-    const fcmPayload = {
-      registration_ids: targetTokens.map(t => t.fcm_token),
-      notification: {
-        title: notification.title,
-        body: notification.body,
-        image: notification.image,
-        sound: notification.android?.sound || 'default',
-        color: notification.android?.color,
-        icon: notification.android?.icon,
-        tag: notification.android?.tag,
-      },
-      data: {
-        ...data,
-        // 견적 관련 데이터 추가
-        ...(quote_data && {
-          type: 'quote_received',
-          quote_id: quote_data.quote_id,
-          business_name: quote_data.business_name,
-          amount: quote_data.amount?.toString(),
-        }),
-        timestamp: Date.now().toString(),
-      },
-      priority: 'high',
-      // Android 설정
-      android: {
-        priority: 'high',
-        notification: {
-          channel_id: notification.android?.channel_id || 'default',
-          sound: notification.android?.sound || 'default',
-          color: notification.android?.color || '#1e40af',
-          icon: notification.android?.icon || 'ic_notification',
-          tag: notification.android?.tag,
-        },
-      },
-      // iOS APNs 설정
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: notification.title,
-              body: notification.body,
-            },
-            sound: notification.apns?.payload?.aps?.sound || 'default',
-            badge: notification.apns?.payload?.aps?.badge || 1,
-            'mutable-content': notification.apns?.payload?.aps?.['mutable-content'] || 1,
-            category: notification.apns?.payload?.aps?.category,
-          },
-        },
-      },
-    }
+    // OAuth2 액세스 토큰 가져오기
+    console.log('🔐 Firebase OAuth2 액세스 토큰 요청 중...')
+    const accessToken = await getFirebaseAccessToken(serviceAccount)
+    console.log('✅ Firebase 액세스 토큰 획득 성공')
 
-    console.log('📦 Firebase FCM 페이로드 구성 완료')
+    // FCM v1 API URL
+    const fcmV1Url = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`
 
-    // Firebase FCM Legacy API 호출
-    const fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `key=${fcmServerKey}`,
-      },
-      body: JSON.stringify(fcmPayload),
-    })
-
-    const fcmResult = await fcmResponse.json()
-    console.log('🔥 Firebase FCM API 응답:', fcmResult)
-
-    // 결과 처리
+    // 결과 저장
     const results: FCMResult[] = []
     let successCount = 0
     let failureCount = 0
 
-    if (fcmResult.results && Array.isArray(fcmResult.results)) {
-      fcmResult.results.forEach((result: any, index: number) => {
-        const token = targetTokens[index]
+    // 각 토큰에 대해 개별 요청 (v1 API는 batch를 지원하지 않음)
+    for (const tokenData of targetTokens) {
+      try {
+        // FCM v1 메시지 페이로드
+        const messagePayload = {
+          message: {
+            token: tokenData.fcm_token,
+            notification: {
+              title: notification.title,
+              body: notification.body,
+              image: notification.image,
+            },
+            data: {
+              ...data,
+              // 견적 관련 데이터 추가
+              ...(quote_data && {
+                type: 'quote_received',
+                quote_id: quote_data.quote_id,
+                business_name: quote_data.business_name,
+                amount: quote_data.amount?.toString() || '',
+              }),
+              timestamp: Date.now().toString(),
+            },
+            android: {
+              priority: 'high',
+              notification: {
+                channel_id: notification.android?.channel_id || 'default',
+                sound: notification.android?.sound || 'default',
+                color: notification.android?.color || '#1e40af',
+                icon: notification.android?.icon || 'ic_notification',
+                tag: notification.android?.tag,
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: {
+                    title: notification.title,
+                    body: notification.body,
+                  },
+                  sound: notification.apns?.payload?.aps?.sound || 'default',
+                  badge: notification.apns?.payload?.aps?.badge || 1,
+                  'mutable-content': notification.apns?.payload?.aps?.['mutable-content'] || 1,
+                  category: notification.apns?.payload?.aps?.category,
+                },
+              },
+            },
+          },
+        }
+
+        console.log(`📤 FCM v1 메시지 전송 중... (${tokenData.fcm_token.substring(0, 20)}...)`)
+
+        // FCM v1 API 호출
+        const fcmResponse = await fetch(fcmV1Url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(messagePayload),
+        })
+
+        const responseText = await fcmResponse.text()
         
-        if (result.message_id) {
+        if (fcmResponse.ok) {
           // 성공
+          const responseData = JSON.parse(responseText)
           results.push({
-            user_id: token.user_id,
-            fcm_token: token.fcm_token,
+            user_id: tokenData.user_id,
+            fcm_token: tokenData.fcm_token,
             success: true,
-            message_id: result.message_id,
+            message_id: responseData.name,
           })
           successCount++
-        } else if (result.error) {
+          console.log('✅ 메시지 전송 성공:', responseData.name)
+        } else {
           // 실패
+          const errorData = JSON.parse(responseText)
+          const errorCode = errorData.error?.details?.[0]?.errorCode || errorData.error?.code || 'UNKNOWN_ERROR'
+          
           results.push({
-            user_id: token.user_id,
-            fcm_token: token.fcm_token,
+            user_id: tokenData.user_id,
+            fcm_token: tokenData.fcm_token,
             success: false,
-            error: result.error,
+            error: errorCode,
           })
           failureCount++
+          console.log('❌ 메시지 전송 실패:', errorCode)
 
           // 토큰이 무효한 경우 DB에서 비활성화
-          if (result.error === 'NotRegistered' || 
-              result.error === 'InvalidRegistration' ||
-              result.error === 'MessageTooBig') {
+          if (errorCode === 'UNREGISTERED' || 
+              errorCode === 'INVALID_ARGUMENT' ||
+              errorCode === 'SENDER_ID_MISMATCH') {
             
-            console.log('🗑️ 무효한 Firebase FCM 토큰 비활성화:', token.fcm_token.substring(0, 20))
+            console.log('🗑️ 무효한 Firebase FCM 토큰 비활성화:', tokenData.fcm_token.substring(0, 20))
             
-            supabase
+            await supabase
               .from('user_fcm_tokens')
               .update({ is_active: false })
-              .eq('fcm_token', token.fcm_token)
-              .then(() => console.log('✅ Firebase FCM 토큰 비활성화 완료'))
-              .catch(err => console.error('❌ Firebase FCM 토큰 비활성화 실패:', err))
+              .eq('fcm_token', tokenData.fcm_token)
           }
         }
-      })
+      } catch (error) {
+        console.error('❌ 토큰 처리 오류:', error)
+        results.push({
+          user_id: tokenData.user_id,
+          fcm_token: tokenData.fcm_token,
+          success: false,
+          error: error.message,
+        })
+        failureCount++
+      }
     }
 
-    console.log(`✅ Firebase FCM 알림 발송 완료 - 성공: ${successCount}, 실패: ${failureCount}`)
+    console.log(`✅ Firebase FCM v1 알림 발송 완료 - 성공: ${successCount}, 실패: ${failureCount}`)
 
     return new Response(
       JSON.stringify({
@@ -311,9 +350,8 @@ serve(async (req: Request) => {
         sent: successCount,
         failed: failureCount,
         results,
-        fcm_response: fcmResult,
-        service: 'firebase-fcm-legacy',
-        version: '2025-v1',
+        service: 'firebase-fcm-v1',
+        version: '2025-v1-http',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -321,14 +359,14 @@ serve(async (req: Request) => {
     )
 
   } catch (error: any) {
-    console.error('❌ Firebase FCM 알림 발송 오류:', error)
+    console.error('❌ Firebase FCM v1 알림 발송 오류:', error)
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
         sent: 0,
         failed: 0,
-        service: 'firebase-fcm-legacy',
+        service: 'firebase-fcm-v1',
       }),
       {
         status: 500,

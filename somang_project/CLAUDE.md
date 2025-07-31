@@ -22,6 +22,8 @@ Tech Stack: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS, Supabase, pnpm
 - 설명은 간략하게
 - 한국어로 대답
 - 안되는게 있으면 다른 방법을 우선 제안
+- 빌드 및 패키지 설치는 요청만 해라
+- npm, npx, pnpm 등 문제가 발생하면 그것 먼저 해결해라
 
 ## 코딩 스타일
 - TypeScript 사용

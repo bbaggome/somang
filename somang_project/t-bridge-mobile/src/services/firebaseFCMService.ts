@@ -3,6 +3,7 @@ import messaging from '@react-native-firebase/messaging';
 import { Platform, Alert, PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 
 export interface FirebaseFCMToken {
   fcmToken: string;
@@ -34,6 +35,19 @@ export class FirebaseFCMService {
     console.log('🔥 Firebase FCM 초기화 시작...');
 
     try {
+      // expo-notifications 설정 (포그라운드에서도 알림 표시)
+      Notifications.setNotificationHandler({
+        handleNotification: async (notification) => {
+          console.log('🔔 Notification Handler 호출됨:', notification.request.content.title);
+          
+          return {
+            shouldShowAlert: true,    // 포그라운드에서도 알림 배너 표시
+            shouldPlaySound: true,    // 알림 소리
+            shouldSetBadge: true,     // 배지 업데이트
+          };
+        },
+      });
+
       // 실제 디바이스 체크
       if (!Device.isDevice) {
         console.log('⚠️ Firebase FCM은 실제 기기에서만 작동합니다');
@@ -41,9 +55,10 @@ export class FirebaseFCMService {
         return null;
       }
 
-      // Android 권한 요청
+      // Android 권한 요청 및 알림 채널 설정
       if (Platform.OS === 'android') {
         await this.requestAndroidPermissions();
+        await this.setupAndroidNotificationChannel();
       }
 
       // FCM 권한 확인 및 요청
@@ -108,6 +123,41 @@ export class FirebaseFCMService {
     } catch (error) {
       console.error('❌ Firebase FCM 초기화 실패:', error);
       return null;
+    }
+  }
+
+  /**
+   * Android 알림 채널 설정
+   */
+  private async setupAndroidNotificationChannel(): Promise<void> {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      await Notifications.setNotificationChannelAsync('quote_notifications', {
+        name: '견적 알림',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#1e40af',
+        sound: 'default',
+        enableVibrate: true,
+        enableLights: true,
+        showBadge: true,
+      });
+
+      await Notifications.setNotificationChannelAsync('default', {
+        name: '기본 알림',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#1e40af',
+        sound: 'default',
+        enableVibrate: true,
+        enableLights: true,
+        showBadge: true,
+      });
+
+      console.log('✅ Android 알림 채널 설정 완료');
+    } catch (error) {
+      console.error('❌ Android 알림 채널 설정 실패:', error);
     }
   }
 
@@ -195,12 +245,34 @@ export class FirebaseFCMService {
    */
   private async showLocalNotification(remoteMessage: any) {
     try {
-      const { Notifications } = await import('expo-notifications');
+      const title = remoteMessage.notification?.title || '새 알림';
+      const body = remoteMessage.notification?.body || '';
       
+      console.log('📱 포그라운드 알림 표시 시도:', { title, body });
+
+      // 방법 1: React Native Alert로 즉시 표시 (가장 확실함)
+      const { Alert } = await import('react-native');
+      Alert.alert(
+        title,
+        body,
+        [
+          { text: '확인', onPress: () => console.log('알림 확인됨') },
+          {
+            text: '보기',
+            onPress: () => {
+              console.log('알림 상세 보기:', remoteMessage.data);
+              this.handleNotificationInteraction(remoteMessage);
+            }
+          }
+        ],
+        { cancelable: true }
+      );
+
+      // 방법 2: Expo Notifications로도 표시 (백업용)
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: remoteMessage.notification?.title || '새 알림',
-          body: remoteMessage.notification?.body || '',
+          title: title,
+          body: body,
           data: remoteMessage.data || {},
           sound: 'default',
           badge: 1,
@@ -208,9 +280,9 @@ export class FirebaseFCMService {
         trigger: null, // 즉시 표시
       });
 
-      console.log('📱 로컬 알림 표시 완료');
+      console.log('✅ 포그라운드 알림 표시 완료 (Alert + 로컬 알림)');
     } catch (error) {
-      console.error('❌ 로컬 알림 표시 실패:', error);
+      console.error('❌ 포그라운드 알림 표시 실패:', error);
     }
   }
 
@@ -253,8 +325,6 @@ export class FirebaseFCMService {
     console.log('🧪 Firebase 테스트 로컬 알림 발송...');
 
     try {
-      const { Notifications } = await import('expo-notifications');
-      
       await Notifications.scheduleNotificationAsync({
         content: {
           title: '🔥 Firebase FCM 테스트',
