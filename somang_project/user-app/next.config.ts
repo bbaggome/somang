@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js', '@supabase/ssr'],
   },
+  
+  // Vercel 배포를 위한 설정
+  output: 'standalone',
 };
 
 export default nextConfig;
