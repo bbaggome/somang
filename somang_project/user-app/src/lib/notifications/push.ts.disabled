@@ -1,0 +1,402 @@
+// 1. user-app/src/lib/notifications/push.ts
+// 웹 Push 알림 관리 유틸리티
+
+interface PushSubscriptionData {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
+/**
+ * Service Worker 차단 여부 확인
+ */
+export async function checkServiceWorkerBlocked(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  
+  // navigator.serviceWorker가 존재하지만 실제로는 차단된 경우
+  if ('serviceWorker' in navigator) {
+    try {
+      // getRegistration() 호출 시 예외가 발생하면 차단된 것
+      await navigator.serviceWorker.getRegistration();
+      return false;
+    } catch (error) {
+      console.log('Service Worker가 브라우저에서 차단되었습니다:', error);
+      return true;
+    }
+  }
+  
+  return true; // serviceWorker가 없으면 차단된 것으로 간주
+}
+
+/**
+ * 브라우저 Push 알림 지원 여부 확인
+ */
+export function isPushSupported(): boolean {
+  if (typeof window === 'undefined') {
+    console.log('서버 사이드 환경에서는 push 알림이 지원되지 않습니다.');
+    return false;
+  }
+
+  const hasServiceWorker = 'serviceWorker' in navigator;
+  const hasPushManager = 'PushManager' in window;
+  const hasNotification = 'Notification' in window;
+  
+  // 개발 환경에서는 더 관대한 보안 컨텍스트 체크
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isLocalhost = location.hostname === 'localhost' || 
+                     location.hostname === '127.0.0.1' ||
+                     location.hostname.endsWith('.local');
+  const isHttps = location.protocol === 'https:';
+  
+  // 개발 환경의 localhost라면 HTTPS가 아니어도 허용
+  const isSecureContext = window.isSecureContext || 
+                         isHttps || 
+                         (isDevelopment && isLocalhost);
+
+  console.log('Push 지원 상태 확인:', {
+    hasServiceWorker,
+    hasPushManager,
+    hasNotification,
+    isSecureContext,
+    isDevelopment,
+    isLocalhost,
+    isHttps,
+    protocol: location.protocol,
+    hostname: location.hostname,
+    userAgent: navigator.userAgent.substring(0, 100) + '...'
+  });
+
+  // 개발 환경에서는 기본적인 API만 체크하고 Service Worker 문제는 실제 등록 시에 처리
+  if (isDevelopment && isLocalhost) {
+    console.log('🚀 개발 환경 감지: 기본 API 지원 여부만 체크');
+    
+    const criticalIssues = [];
+    
+    if (!hasPushManager) {
+      criticalIssues.push('PushManager가 지원되지 않습니다.');
+    }
+
+    if (!hasNotification) {
+      criticalIssues.push('Notification API가 지원되지 않습니다.');
+    }
+
+    if (criticalIssues.length > 0) {
+      console.warn('❌ 필수 API 지원 불가:', criticalIssues);
+      return false;
+    }
+
+    // Service Worker는 실제 등록할 때 체크
+    if (!hasServiceWorker) {
+      console.warn('⚠️ Service Worker 지원이 감지되지 않지만 개발 환경에서는 시도해봅니다.');
+    }
+
+    console.log('✅ 개발 환경에서 Push 알림 시도 가능');
+    return true;
+  }
+
+  // 프로덕션 환경에서는 엄격하게 체크
+  const issues = [];
+  
+  if (!hasServiceWorker) {
+    issues.push('Service Worker가 지원되지 않습니다.');
+  }
+
+  if (!hasPushManager) {
+    issues.push('PushManager가 지원되지 않습니다.');
+  }
+
+  if (!hasNotification) {
+    issues.push('Notification API가 지원되지 않습니다.');
+  }
+
+  if (!isSecureContext) {
+    issues.push('HTTPS 환경이 아닙니다. Push 알림은 HTTPS에서만 작동합니다.');
+  }
+
+  if (issues.length > 0) {
+    console.warn('❌ Push 알림 지원 불가:', issues);
+    return false;
+  }
+
+  console.log('✅ Push 알림이 지원됩니다.');
+  return true;
+}
+
+/**
+ * 알림 권한 요청
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (!isPushSupported()) {
+    throw new Error('Push notifications are not supported');
+  }
+
+  const permission = await Notification.requestPermission();
+  return permission;
+}
+
+/**
+ * Service Worker 등록
+ */
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
+  console.log('🔄 Service Worker 등록 시도 시작...');
+  
+  // 먼저 Service Worker 지원 여부 확인
+  if (!('serviceWorker' in navigator)) {
+    console.error('❌ navigator.serviceWorker가 존재하지 않습니다.');
+    console.log('현재 환경 정보:', {
+      userAgent: navigator.userAgent,
+      isSecureContext: window.isSecureContext,
+      protocol: location.protocol,
+      hostname: location.hostname
+    });
+    console.log('해결 방법:');
+    console.log('1. HTTPS로 접속: https://localhost:50331');
+    console.log('2. Chrome 플래그 설정: chrome://flags/#unsafely-treat-insecure-origin-as-secure');
+    console.log('3. http://localhost:50331 추가 후 브라우저 재시작');
+    console.log('4. 또는 시크릿 모드에서 테스트');
+    throw new Error('Service Worker API not available. HTTPS required or enable insecure origins in Chrome flags.');
+  }
+
+  try {
+    // 기존 등록이 있는지 확인
+    console.log('🔄 기존 Service Worker 등록 확인 중...');
+    let existingRegistration;
+    
+    try {
+      existingRegistration = await navigator.serviceWorker.getRegistration();
+    } catch (getRegError) {
+      console.warn('⚠️ getRegistration() 실패:', getRegError);
+      console.log('Service Worker API가 차단되었을 수 있습니다.');
+    }
+    
+    if (existingRegistration) {
+      console.log('✅ 기존 Service Worker 등록 발견:', existingRegistration.scope);
+      console.log('Service Worker 상태:', existingRegistration.active?.state);
+      
+      try {
+        await navigator.serviceWorker.ready;
+        console.log('✅ 기존 Service Worker 준비 완료');
+        return existingRegistration;
+      } catch (readyError) {
+        console.warn('⚠️ Service Worker ready 대기 실패:', readyError);
+        // 계속 진행하여 새로 등록 시도
+      }
+    }
+
+    console.log('🔄 새 Service Worker 등록 시도: /sw.js');
+    
+    // 여러 옵션으로 등록 시도
+    const registrationOptions = [
+      { scope: '/', updateViaCache: 'none' },
+      { scope: '/' },
+      {} // 기본 옵션
+    ];
+
+    let registration: ServiceWorkerRegistration | null = null;
+    let lastError: Error | null = null;
+
+    for (const [index, options] of registrationOptions.entries()) {
+      try {
+        console.log(`🔄 등록 시도 ${index + 1}/${registrationOptions.length}:`, options);
+        registration = await navigator.serviceWorker.register('/sw.js', options);
+        console.log('✅ Service Worker 등록 성공!');
+        break;
+      } catch (regError) {
+        console.warn(`⚠️ 등록 시도 ${index + 1} 실패:`, regError);
+        lastError = regError as Error;
+        continue;
+      }
+    }
+
+    if (!registration) {
+      console.error('❌ 모든 등록 시도 실패');
+      throw lastError || new Error('Service Worker registration failed');
+    }
+    
+    console.log('✅ Service Worker 등록 성공:', {
+      scope: registration.scope,
+      installing: !!registration.installing,
+      waiting: !!registration.waiting,
+      active: !!registration.active
+    });
+    
+    console.log('🔄 Service Worker 준비 대기 중...');
+    try {
+      await navigator.serviceWorker.ready;
+      console.log('✅ Service Worker 준비 완료');
+    } catch (readyError) {
+      console.warn('⚠️ Service Worker ready 대기 실패, 하지만 등록은 성공:', readyError);
+    }
+    
+    return registration;
+    
+  } catch (error) {
+    console.error('❌ Service Worker 등록 완전 실패:', error);
+    
+    if (error instanceof Error) {
+      if (error.name === 'SecurityError') {
+        console.error('   → 보안 오류: 브라우저에서 Service Worker를 차단했습니다.');
+        console.log('   해결책: chrome://settings/privacy → 사이트 설정 → JavaScript 허용');
+      } else if (error.name === 'TypeError') {
+        console.error('   → 타입 오류: Service Worker 파일에 문제가 있거나 접근할 수 없습니다.');
+        console.log('   /sw.js 파일이 존재하고 접근 가능한지 확인하세요.');
+      } else if (error.message.includes('not available')) {
+        console.error('   → API 차단: 브라우저 설정에서 Service Worker가 비활성화되었습니다.');
+      }
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Push 구독 생성
+ */
+export async function subscribeToPush(): Promise<PushSubscriptionData | null> {
+  try {
+    console.log('🔄 Push 구독 시작...');
+    
+    if (!isPushSupported()) {
+      console.error('❌ Push 알림이 지원되지 않습니다.');
+      return null;
+    }
+
+    if (Notification.permission !== 'granted') {
+      console.error('❌ 알림 권한이 허용되지 않았습니다:', Notification.permission);
+      return null;
+    }
+
+    console.log('🔄 Service Worker 등록 중...');
+    const registration = await registerServiceWorker();
+    console.log('✅ Service Worker 등록 완료');
+    
+    // VAPID 공개 키 (환경 변수에서 가져와야 함)
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidPublicKey) {
+      console.error('❌ VAPID 공개 키를 찾을 수 없습니다. 환경 변수를 확인하세요.');
+      return null;
+    }
+    console.log('✅ VAPID 공개 키 확인됨');
+
+    console.log('🔄 Push Manager 구독 생성 중...');
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+    console.log('✅ Push Manager 구독 생성 완료');
+
+    const subscriptionData = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+        auth: arrayBufferToBase64(subscription.getKey('auth')!),
+      },
+    };
+
+    console.log('✅ Push 구독 데이터 생성 완료:', {
+      endpoint: subscriptionData.endpoint.substring(0, 50) + '...',
+      hasP256dh: !!subscriptionData.keys.p256dh,
+      hasAuth: !!subscriptionData.keys.auth
+    });
+
+    return subscriptionData;
+  } catch (error) {
+    console.error('❌ Push 구독 실패:', error);
+    
+    if (error instanceof Error) {
+      if (error.name === 'NotSupportedError') {
+        console.error('   → Push 알림이 지원되지 않는 브라우저입니다.');
+      } else if (error.name === 'NotAllowedError') {
+        console.error('   → 사용자가 알림 권한을 거부했습니다.');
+      } else if (error.name === 'AbortError') {
+        console.error('   → Push 구독이 중단되었습니다.');
+      } else {
+        console.error('   → 알 수 없는 오류:', error.message);
+      }
+    }
+    
+    return null;
+  }
+}
+
+/**
+ * Push 구독 해제
+ */
+export async function unsubscribeFromPush(): Promise<boolean> {
+  try {
+    console.log('Getting service worker registration...');
+    const registration = await navigator.serviceWorker.getRegistration();
+    
+    if (!registration) {
+      console.log('No service worker registration found');
+      return true; // 등록이 없으면 이미 해제된 것으로 간주
+    }
+
+    console.log('Getting push subscription...');
+    const subscription = await registration.pushManager.getSubscription();
+    
+    if (!subscription) {
+      console.log('No push subscription found');
+      return true; // 구독이 없으면 이미 해제된 것으로 간주
+    }
+
+    console.log('Unsubscribing from push manager...');
+    const result = await subscription.unsubscribe();
+    console.log('Push manager unsubscribe result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Push unsubscription failed:', error);
+    // 에러가 발생해도 true를 반환하여 서버 측 해제는 진행되도록 함
+    return true;
+  }
+}
+
+/**
+ * 현재 Push 구독 상태 확인
+ */
+export async function getCurrentSubscription(): Promise<PushSubscriptionData | null> {
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return null;
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return null;
+
+    return {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+        auth: arrayBufferToBase64(subscription.getKey('auth')!),
+      },
+    };
+  } catch (error) {
+    console.error('Get subscription failed:', error);
+    return null;
+  }
+}
+
+// Helper functions
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}

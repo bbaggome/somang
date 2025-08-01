@@ -1,0 +1,113 @@
+version: '3.8'  # 최신 버전으로 업데이트
+services:
+  user-app-dev:
+    container_name: user-app-dev
+    build:
+      context: ./user-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "50443:50443"  # HTTPS 포트만 노출
+    volumes:
+      - ./user-app:/app
+      - /app/node_modules
+      - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
+    environment:
+      - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50443
+    profiles:
+      - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - user-app-dev
+
+  # 나머지 서비스는 동일
+  biz-app-dev:
+    container_name: biz-app-dev
+    build:
+      context: ./biz-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "50444:50444"  # HTTPS 포트만 노출
+    volumes:
+      - ./biz-app:/app
+      - /app/node_modules
+      - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
+    environment:
+      - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50444
+    profiles:
+      - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - biz-app-dev
+
+  admin-app-dev:
+    container_name: admin-app-dev
+    build:
+      context: ./admin-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "50445:50445"  # HTTPS 포트만 노출
+    volumes:
+      - ./admin-app:/app
+      - /app/node_modules
+      - /app/.next
+      - ./certs:/app/certs:ro  # 인증서 볼륨 마운트
+    environment:
+      - WATCHPACK_POLLING=true
+      - HTTPS=true
+      - HTTPS_PORT=50445
+    profiles:
+      - "dev"
+    networks:
+      somang-network:
+        aliases:
+          - admin-app-dev
+
+  # 운영 환경 서비스는 기존 설정 유지
+  user-app-prod:
+    container_name: user-app-prod
+    build:
+      context: ./user-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:3000"
+    profiles:
+      - "prod"
+    networks:
+      - somang-network
+
+  biz-app-prod:
+    container_name: biz-app-prod
+    build:
+      context: ./biz-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8100:3000"
+    profiles:
+      - "prod"
+    networks:
+      - somang-network
+
+  admin-app-prod:
+    container_name: admin-app-prod
+    build:
+      context: ./admin-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8200:3000"
+    profiles:
+      - "prod"
+    networks:
+      - somang-network
+
+networks:
+  somang-network:
+    driver: bridge
+    name: somang-network

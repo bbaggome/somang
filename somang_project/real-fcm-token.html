@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>실제 FCM 토큰 생성기</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>🔥 실제 Firebase FCM 토큰 생성</h1>
+    
+    <div id="status">Firebase 초기화 중...</div>
+    
+    <button id="generate-token" onclick="generateRealToken()" style="padding: 10px 20px; font-size: 16px; margin: 20px 0;">
+        실제 FCM 토큰 생성하기
+    </button>
+    
+    <div id="token-result" style="margin: 20px 0;"></div>
+
+    <script type="module">
+        // Firebase v10 모듈 사용
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
+        import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdh-JVwPW_ZGOJl_vBH6rDMWl-wJcxFU8",
+            authDomain: "t-bridge.firebaseapp.com",
+            projectId: "t-bridge",
+            storageBucket: "t-bridge.firebasestorage.app",
+            messagingSenderId: "896375537648",
+            appId: "1:896375537648:web:7d0f83d12dd2c7f9cbbc63"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        document.getElementById('status').innerHTML = '✅ Firebase 초기화 완료';
+
+        window.generateRealToken = async function() {
+            try {
+                document.getElementById('token-result').innerHTML = '토큰 생성 중...';
+                
+                // Service Worker 등록
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                    console.log('Service Worker 등록 성공:', registration);
+                }
+                
+                // 알림 권한 요청
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    document.getElementById('token-result').innerHTML = '❌ 알림 권한이 필요합니다.';
+                    return;
+                }
+
+                // FCM 토큰 가져오기 (VAPID 키 없이 시도)
+                console.log('FCM 토큰 가져오기 시작...');
+                const token = await getToken(messaging);
+
+                if (token) {
+                    document.getElementById('token-result').innerHTML = `
+                        <div style="border: 2px solid green; padding: 15px; border-radius: 5px;">
+                            <h3>✅ 실제 FCM 토큰 생성 성공!</h3>
+                            <p><strong>Firebase Console에서 사용하세요:</strong></p>
+                            <textarea style="width: 100%; height: 100px; font-size: 11px;" readonly>${token}</textarea>
+                            <button onclick="copyToken('${token}')" style="margin-top: 10px; padding: 5px 15px;">토큰 복사</button>
+                        </div>
+                    `;
+                    
+                    console.log('실제 FCM 토큰:', token);
+                } else {
+                    document.getElementById('token-result').innerHTML = '❌ FCM 토큰을 가져올 수 없습니다.';
+                }
+
+            } catch (error) {
+                console.error('FCM 토큰 생성 오류:', error);
+                document.getElementById('token-result').innerHTML = `❌ 오류: ${error.message}`;
+            }
+        };
+
+        window.copyToken = function(token) {
+            navigator.clipboard.writeText(token).then(() => {
+                alert('토큰이 클립보드에 복사되었습니다!');
+            });
+        };
+
+        // 메시지 리스너
+        onMessage(messaging, (payload) => {
+            console.log('메시지 수신:', payload);
+            alert(`알림 수신: ${payload.notification.title}\n${payload.notification.body}`);
+        });
+    </script>
+</body>
+</html>

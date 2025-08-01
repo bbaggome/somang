@@ -1,0 +1,23 @@
+{
+  "java.configuration.workspaceCacheLimit": 90,
+  "java.gradle.buildServer.enabled": "off",
+  "java.import.gradle.enabled": false,
+  "java.clean.workspace": false,
+  "java.project.referencedLibraries": [],
+  "files.exclude": {
+    "**/node_modules/**": true,
+    "**/.pnpm/**": true,
+    "**/android/build/**": true,
+    "**/android/.gradle/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/android/build": true,
+    "**/android/.gradle": true
+  },
+  "gradle.nestedProjects": false,
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.pnpm/**"
+  ]
+}

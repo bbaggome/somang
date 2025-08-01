@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 받아보기 (4/5)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .selection-label {
+            transition: all 0.2s ease-in-out;
+        }
+        .selection-label.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .selection-label.selected .title {
+            color: #2563eb;
+            font-weight: 700;
+        }
+        .selection-label.selected .check-icon-container {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .check-icon-container .fa-check {
+             opacity: 0;
+             transition: opacity 0.2s ease-in-out;
+        }
+        .selection-label.selected .check-icon-container .fa-check {
+            opacity: 1;
+        }
+        input[type="radio"] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-sm h-[844px] bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2"  aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <div class="w-full bg-gray-200 h-1">
+            <div class="bg-blue-600 h-1 transition-all duration-500" style="width: 50%"></div>
+        </div>
+
+        <main class="flex-grow overflow-y-auto p-6">
+            
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800">한달 데이터 사용량은<br>어떻게 되시나요?</h2>
+                <p class="mt-2 text-gray-500">의무요금제 사용 후, 최적의 요금제를 추천해 드려요</p>
+                <div class="mt-8 space-y-4" id="dataUsageGroup">
+                    
+                    <label class="selection-label flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer">
+                        <div class="check-icon-container w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 mt-1">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="title font-bold text-gray-800">데이터 무제한</h4>
+                            <p class="text-sm text-gray-500">마음껏 사용해요</p>
+                        </div>
+                        <input type="radio" name="dataUsage" value="unlimited">
+                    </label>
+
+                    <label class="selection-label flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer">
+                        <div class="check-icon-container w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 mt-1">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="title font-bold text-gray-800">50GB 이상</h4>
+                            <p class="text-sm text-gray-500">매일 1시간 이상 영상을 자주 시청해요</p>
+                        </div>
+                        <input type="radio" name="dataUsage" value="50gb_plus">
+                    </label>
+
+                    <label class="selection-label flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer">
+                        <div class="check-icon-container w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 mt-1">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="title font-bold text-gray-800">10GB 이상</h4>
+                            <p class="text-sm text-gray-500">음악을 자주 들어요</p>
+                        </div>
+                        <input type="radio" name="dataUsage" value="10gb_plus">
+                    </label>
+                    
+                    <label class="selection-label flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer">
+                        <div class="check-icon-container w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 mt-1">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="title font-bold text-gray-800">9GB 이하</h4>
+                            <p class="text-sm text-gray-500">웹 서핑과 카톡 위주로 사용해요</p>
+                        </div>
+                        <input type="radio" name="dataUsage" value="9gb_under">
+                    </label>
+                    
+                    <label class="selection-label flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer">
+                        <div class="check-icon-container w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mr-4 mt-1">
+                            <i class="fas fa-check text-sm text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="title font-bold text-gray-800">5GB 이하</h4>
+                            <p class="text-sm text-gray-500">거의 사용하지 않고 WIFI 이용해요</p>
+                        </div>
+                        <input type="radio" name="dataUsage" value="5gb_under">
+                    </label>
+
+                </div>
+            </section>
+        </main>
+        
+        <footer class="p-4 bg-white border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+            <button class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition"  aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-lg text-gray-600"></i>
+            </button>
+            <button id="nextButton" class="flex-grow ml-4 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition disabled:bg-gray-300" disabled>
+                다음
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        const dataUsageGroup = document.getElementById('dataUsageGroup');
+        if (dataUsageGroup) {
+            const labels = dataUsageGroup.querySelectorAll('label');
+            const nextButton = document.getElementById('nextButton');
+
+            labels.forEach(label => {
+                label.addEventListener('click', () => {
+                    labels.forEach(lbl => lbl.classList.remove('selected'));
+                    label.classList.add('selected');
+
+                    const radio = label.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                    if(nextButton) {
+                        nextButton.disabled = false;
+                    }
+                });
+            });
+        }
+
+        // '다음' 버튼 클릭 이벤트 리스너 추가
+        const nextButton = document.getElementById('nextButton');
+        if (nextButton) {
+            nextButton.addEventListener('click', function() {
+                if (this.disabled) {
+                    return;
+                }
+
+                // 이전 페이지들에서 전달된 파라미터를 가져옴
+                const params = new URLSearchParams(window.location.search);
+
+                // 현재 페이지에서 선택된 값을 가져옴
+                const dataUsage = document.querySelector('input[name="dataUsage"]:checked').value;
+
+                // 새로운 파라미터를 추가
+                params.set('dataUsage', dataUsage);
+
+                // 생성된 URL로 페이지를 이동
+                window.location.href = `order_step6.html?${params.toString()}`;
+            });
+        }
+    </script>
+</body>
+</html>

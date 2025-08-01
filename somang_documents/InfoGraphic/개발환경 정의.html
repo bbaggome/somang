@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>.NET & Supabase 기술 청사진 인포그래픽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #001219;
+            color: #e9d8a6;
+        }
+        .card {
+            background-color: #003f5c;
+            border-left: 5px solid #0a9396;
+        }
+        .stat-card {
+            background-color: transparent;
+            border: 2px solid #94d2bd;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(148, 210, 189, 0.2);
+        }
+        .stat-number {
+            font-weight: 900;
+            color: #ee9b00;
+            text-shadow: 0 0 15px rgba(238, 155, 0, 0.5);
+        }
+        .flow-diagram-box {
+            background-color: rgba(10, 147, 150, 0.1);
+            border: 1px solid #0a9396;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            height: 100%;
+        }
+        .flow-diagram-arrow {
+            font-size: 2.5rem;
+            color: #94d2bd;
+            align-self: center;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12 md:mb-20">
+            <h1 class="text-4xl md:text-6xl font-black text-white mb-2">통합 서비스 플랫폼 기술 청사진</h1>
+            <p class="text-xl md:text-2xl text-[#94d2bd]">.NET 8, Blazor MAUI, and Supabase</p>
+        </header>
+
+        <main class="space-y-16 md:space-y-24">
+
+            <section id="architecture">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">1. 통합 아키텍처: 하이브리드-퍼스트 모델</h2>
+                <div class="max-w-5xl mx-auto p-6 md:p-8 card rounded-xl shadow-2xl">
+                    <p class="text-lg mb-8 text-center text-gray-300">하나의 공유된 코드 베이스로 네이티브 모바일 앱과 반응형 웹 포털을 동시에 구축하여 개발 효율성을 극대화합니다. 이는 웹 기술의 유연성과 네이티브 성능의 강력함을 결합한 전략입니다.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-5 items-center gap-6">
+
+                        <div class="md:col-span-2">
+                             <div class="flow-diagram-box flex flex-col justify-center">
+                                <h3 class="text-xl font-bold text-white mb-2">클라이언트 애플리케이션</h3>
+                                <div class="bg-[#005f73] p-3 rounded-md mb-3 shadow-lg">
+                                    <p class="font-bold text-white">📱 최종 사용자 앱</p>
+                                    <p class="text-sm text-gray-300">.NET MAUI Blazor Hybrid</p>
+                                </div>
+                                <div class="bg-[#005f73] p-3 rounded-md shadow-lg">
+                                    <p class="font-bold text-white">💻 사업주/관리자 포털</p>
+                                    <p class="text-sm text-gray-300">Blazor Web App</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hidden md:block flow-diagram-arrow text-center">→</div>
+                         <div class="md:hidden text-center flow-diagram-arrow my-4">↓</div>
+
+
+                        <div class="md:col-span-2">
+                            <div class="flow-diagram-box flex flex-col justify-center">
+                                <h3 class="text-xl font-bold text-white mb-2">공유 코드 라이브러리</h3>
+                                <div class="bg-[#0a9396] p-3 rounded-md mb-3 shadow-lg">
+                                    <p class="font-bold text-white">🎨 UI 컴포넌트 (RCL)</p>
+                                    <p class="text-sm text-gray-300">Radzen & Custom CSS</p>
+                                </div>
+                                <div class="bg-[#0a9396] p-3 rounded-md shadow-lg">
+                                    <p class="font-bold text-white">📦 서비스 & 모델</p>
+                                    <p class="text-sm text-gray-300">Fluxor, Supabase Client</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-5 text-center flow-diagram-arrow my-4">↓</div>
+                        
+                        <div class="md:col-start-2 md:col-span-3">
+                             <div class="flow-diagram-box">
+                                <h3 class="text-xl font-bold text-white mb-2">백엔드 서비스 (BaaS)</h3>
+                                <div class="bg-[#ca6702] p-3 rounded-md shadow-lg">
+                                    <p class="font-bold text-white">⚡ Supabase</p>
+                                    <p class="text-sm text-gray-300">인증, DB, RLS, 스토리지, 실시간</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section id="kpi">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">2. 기대 효율성: 정량적 이점</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div class="stat-card p-8 rounded-xl text-center">
+                        <p class="stat-number text-6xl md:text-7xl">60%</p>
+                        <p class="text-xl font-bold mt-4 text-white">개발 비용 절감</p>
+                    </div>
+                    <div class="stat-card p-8 rounded-xl text-center">
+                        <p class="stat-number text-6xl md:text-7xl">45%</p>
+                        <p class="text-xl font-bold mt-4 text-white">플랫폼별 버그 감소</p>
+                    </div>
+                    <div class="stat-card p-8 rounded-xl text-center">
+                        <p class="stat-number text-6xl md:text-7xl">35%</p>
+                        <p class="text-xl font-bold mt-4 text-white">시장 출시 시간 단축</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="stack">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">3. 핵심 기술 스택 결정</h2>
+                <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div class="card rounded-xl shadow-2xl p-6">
+                         <h3 class="text-2xl font-bold text-white mb-4">프론트엔드 & 상태 관리</h3>
+                        <p class="text-gray-300 mb-6">데이터 집약적인 포털을 위한 강력한 기능과 일관된 사용자 경험을 제공하기 위해 Radzen UI 라이브러리를 표준으로 채택합니다. Fluxor는 복잡한 애플리케이션 상태를 예측 가능하게 관리합니다.</p>
+                        <div class="chart-container">
+                            <canvas id="frontendStackChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card rounded-xl shadow-2xl p-6">
+                        <h3 class="text-2xl font-bold text-white mb-4">백엔드: BaaS-First 전략</h3>
+                        <p class="text-gray-300 mb-6">Supabase를 포괄적인 백엔드로 활용하여 개발을 단순화합니다. 대부분의 비즈니스 로직과 보안은 데이터베이스 계층에서 직접 처리되어 안정성과 개발 속도를 높입니다.</p>
+                        <div class="chart-container">
+                            <canvas id="backendStackChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="rls">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">4. 보안 모델의 혁신: 행 수준 보안 (RLS)</h2>
+                 <div class="max-w-5xl mx-auto p-6 md:p-8 card rounded-xl shadow-2xl">
+                    <p class="text-lg mb-8 text-center text-gray-300">보안 로직을 애플리케이션 코드에서 데이터베이스로 이동시킵니다. RLS 정책은 사용자의 역할과 ID에 따라 데이터 접근을 자동으로 필터링하여, C# 코드 없이도 강력하고 일관된 보안을 보장합니다.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+                        <div class="md:col-span-5 p-4 bg-gray-800/30 rounded-lg border border-gray-600">
+                             <h4 class="text-xl font-bold text-white mb-2 text-center">전통적 방식 (애플리케이션 계층)</h4>
+                            <code class="text-sm text-pink-400 block p-2 bg-gray-900 rounded">
+                                <span class="text-cyan-400">if</span> (user.Role == <span class="text-amber-400">"admin"</span>) {<br>
+                                &nbsp;&nbsp;<span class="text-gray-500">// 모든 데이터 접근 허용</span><br>
+                                } <span class="text-cyan-400">else if</span> (user.Id == resource.OwnerId) {<br>
+                                &nbsp;&nbsp;<span class="text-gray-500">// 자신의 데이터만 접근 허용</span><br>
+                                }
+                            </code>
+                        </div>
+
+                        <div class="hidden md:block text-center text-3xl text-[#ee9b00] font-black">⇒</div>
+                        <div class="md:hidden text-center text-3xl text-[#ee9b00] font-black my-4">⇓</div>
+                        
+                        <div class="md:col-span-5 p-4 bg-gray-800/30 rounded-lg border border-[#0a9396]">
+                            <h4 class="text-xl font-bold text-white mb-2 text-center">Supabase 방식 (데이터 계층)</h4>
+                             <code class="text-sm text-green-400 block p-2 bg-gray-900 rounded">
+                                <span class="text-cyan-400">CREATE POLICY</span> "Owners can view" <span class="text-cyan-400">ON</span> stores<br>
+                                <span class="text-cyan-400">FOR SELECT</span><br>
+                                <span class="text-cyan-400">USING</span> ( auth.uid() = owner_id );
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="deployment">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">5. 자동화된 배포 파이프라인 (CI/CD)</h2>
+                <div class="max-w-6xl mx-auto relative">
+                     <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-700 hidden md:block"></div>
+                     <div class="absolute top-0 left-1/2 w-1 h-full bg-gray-700 md:hidden"></div>
+
+                    <div class="relative grid grid-cols-1 md:grid-cols-3 gap-y-12 md:gap-x-8">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="w-20 h-20 rounded-full bg-[#0a9396] border-4 border-white flex items-center justify-center text-4xl shadow-lg z-10">🚀</div>
+                            <h3 class="text-xl font-bold text-white mt-4">1. 코드 푸시</h3>
+                            <p class="text-gray-400 mt-2 px-4">개발자가 GitHub에 코드를 푸시하면 워크플로우가 자동으로 시작됩니다.</p>
+                        </div>
+
+                         <div class="flex flex-col items-center text-center">
+                            <div class="w-20 h-20 rounded-full bg-[#ee9b00] border-4 border-white flex items-center justify-center text-4xl shadow-lg z-10">⚙️</div>
+                            <h3 class="text-xl font-bold text-white mt-4">2. 빌드 및 테스트</h3>
+                             <p class="text-gray-400 mt-2 px-4">GitHub Actions가 코드를 빌드하고, 서명하며, 테스트를 실행하여 안정성을 검증합니다.</p>
+                        </div>
+                        
+                        <div class="flex flex-col items-center text-center">
+                             <div class="w-20 h-20 rounded-full bg-[#ae2012] border-4 border-white flex items-center justify-center text-4xl shadow-lg z-10">📦</div>
+                            <h3 class="text-xl font-bold text-white mt-4">3. 배포</h3>
+                            <div class="text-gray-400 mt-2 px-4">
+                                <p><strong>웹 포털</strong> → Azure App Service</p>
+                                <p><strong>모바일 앱</strong> → App Store & Google Play</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="risks">
+                <h2 class="text-3xl font-bold text-center text-white mb-10">6. 주요 리스크 및 완화 계획</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div class="card p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-3">커뮤니티 라이브러리 의존성</h3>
+                        <p class="text-gray-300"><strong>완화:</strong> 클라이언트 라이브러리 주변에 추상화 계층(Wrapper)을 구축하여 변경 사항의 영향을 최소화하고 교체를 용이하게 합니다.</p>
+                    </div>
+                     <div class="card p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-3">하이브리드 상태 관리</h3>
+                        <p class="text-gray-300"><strong>완화:</strong> 개발 초기에 네이티브 앱 생명주기(백그라운드, 종료 등)에 따른 상태 저장/복원 시나리오를 집중적으로 프로토타이핑하고 테스트합니다.</p>
+                    </div>
+                     <div class="card p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-3">배포 복잡성</h3>
+                        <p class="text-gray-300"><strong>완화:</strong> 배포 전담 인력을 지정하고, 자동화 이전에 수동 배포 프로세스를 완벽히 문서화하여 복잡성을 체계적으로 관리합니다.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center text-gray-500 mt-16 md:mt-24 py-6 border-t border-gray-700">
+            <p>본 인포그래픽은 제공된 기술 청사진 문서를 기반으로 제작되었습니다.</p>
+            <p>&copy; 2025 기술 시각화 보고서.</p>
+        </footer>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const wrapLabel = (label) => {
+            if (label.length <= 16) {
+                return label;
+            }
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + ' ' + word).trim().length > 16) {
+                    lines.push(currentLine.trim());
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            });
+            if (currentLine) {
+                lines.push(currentLine.trim());
+            }
+            return lines;
+        };
+        
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+              return label.join(' ');
+            } else {
+              return label;
+            }
+        };
+        
+        const brilliantBlues = {
+             blueGreen: '#0a9396',
+             viridian: '#005f73',
+             lightBlue: '#94d2bd',
+             paleYellow: '#e9d8a6',
+             orange: '#ee9b00',
+             darkOrange: '#ca6702',
+             rust: '#bb3e03',
+             darkRed: '#ae2012'
+        };
+
+        const frontendStackCtx = document.getElementById('frontendStackChart').getContext('2d');
+        new Chart(frontendStackCtx, {
+            type: 'bar',
+            data: {
+                labels: ['UI 컴포넌트 라이브러리', '상태 관리 프레임워크', '크로스플랫폼 UI'].map(wrapLabel),
+                datasets: [{
+                    label: '선택된 기술',
+                    data: [90, 80, 95],
+                    backgroundColor: [
+                        brilliantBlues.blueGreen,
+                        brilliantBlues.lightBlue,
+                        brilliantBlues.viridian
+                    ],
+                    borderColor: brilliantBlues.paleYellow,
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                           display: false
+                        }
+                    },
+                    y: {
+                         grid: {
+                            color: 'rgba(255, 255, 255, 0)'
+                        },
+                        ticks: {
+                            color: '#e9d8a6',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: '프론트엔드 핵심 구성요소',
+                        color: '#ffffff',
+                        font: { size: 16 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+        const backendStackCtx = document.getElementById('backendStackChart').getContext('2d');
+        new Chart(backendStackCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['데이터베이스', '인증 (Auth)', '행 수준 보안 (RLS)', '실시간 기능', '스토리지'].map(wrapLabel),
+                datasets: [{
+                    label: 'Supabase 활용도',
+                    data: [30, 20, 25, 15, 10],
+                     backgroundColor: [
+                        brilliantBlues.orange,
+                        brilliantBlues.darkOrange,
+                        brilliantBlues.rust,
+                        brilliantBlues.darkRed,
+                        brilliantBlues.paleYellow,
+                    ],
+                    borderColor: '#003f5c',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#e9d8a6',
+                            font: { size: 12 }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Supabase 서비스 활용 분포',
+                        color: '#ffffff',
+                        font: { size: 16 }
+                    },
+                     tooltip: {
+                        callbacks: {
+                            title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+    });
+    </script>
+</body>
+</html>

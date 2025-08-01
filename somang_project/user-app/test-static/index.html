@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge Mobile Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 400px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #fff;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            min-height: 50px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 T-Bridge Mobile</h1>
+        <p>Capacitor 테스트 앱</p>
+        
+        <button onclick="testDevice()">📱 디바이스 정보</button>
+        <button onclick="testLocation()">📍 위치 정보</button>
+        <button onclick="testClipboard()">📋 클립보드 테스트</button>
+        <button onclick="testNotification()">🔔 알림 권한</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { Device } from '@capacitor/device';
+        import { Geolocation } from '@capacitor/geolocation';
+        import { Clipboard } from '@capacitor/clipboard';
+        import { PushNotifications } from '@capacitor/push-notifications';
+
+        window.testDevice = async () => {
+            try {
+                const info = await Device.getInfo();
+                showResult(`
+                    <div class="success">
+                        <strong>디바이스 정보:</strong><br>
+                        플랫폼: ${info.platform}<br>
+                        모델: ${info.model}<br>
+                        OS 버전: ${info.osVersion}
+                    </div>
+                `, 'success');
+            } catch (error) {
+                showResult(`디바이스 정보 가져오기 실패: ${error.message}`, 'error');
+            }
+        };
+
+        window.testLocation = async () => {
+            try {
+                const position = await Geolocation.getCurrentPosition();
+                showResult(`
+                    <div class="success">
+                        <strong>위치 정보:</strong><br>
+                        위도: ${position.coords.latitude.toFixed(6)}<br>
+                        경도: ${position.coords.longitude.toFixed(6)}
+                    </div>
+                `, 'success');
+            } catch (error) {
+                showResult(`위치 정보 가져오기 실패: ${error.message}`, 'error');
+            }
+        };
+
+        window.testClipboard = async () => {
+            try {
+                await Clipboard.write({ string: 'T-Bridge 테스트 성공!' });
+                const result = await Clipboard.read();
+                showResult(`
+                    <div class="success">
+                        <strong>클립보드 테스트 성공!</strong><br>
+                        복사된 텍스트: ${result.value}
+                    </div>
+                `, 'success');
+            } catch (error) {
+                showResult(`클립보드 테스트 실패: ${error.message}`, 'error');
+            }
+        };
+
+        window.testNotification = async () => {
+            try {
+                const result = await PushNotifications.requestPermissions();
+                showResult(`
+                    <div class="success">
+                        <strong>알림 권한 요청 완료!</strong><br>
+                        상태: ${result.receive}
+                    </div>
+                `, 'success');
+            } catch (error) {
+                showResult(`알림 권한 요청 실패: ${error.message}`, 'error');
+            }
+        };
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = type;
+        }
+
+        // 앱 로드 시 웰컴 메시지
+        showResult('네이티브 기능 테스트 버튼을 클릭해보세요!', 'success');
+    </script>
+</body>
+</html>

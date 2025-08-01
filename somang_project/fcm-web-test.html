@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase FCM 웹 테스트</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+</head>
+<body>
+    <h1>🔥 Firebase FCM 웹 테스트</h1>
+    <div id="token-display">FCM 토큰 가져오는 중...</div>
+    <button id="test-notification" style="margin-top: 20px; padding: 10px 20px; font-size: 16px;" disabled>
+        FCM 테스트 알림 보내기
+    </button>
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <script>
+        // Firebase 구성
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdh-JVwPW_ZGOJl_vBH6rDMWl-wJcxFU8",
+            authDomain: "t-bridge.firebaseapp.com",
+            projectId: "t-bridge",
+            storageBucket: "t-bridge.firebasestorage.app",
+            messagingSenderId: "896375537648",
+            appId: "1:896375537648:web:7d0f83d12dd2c7f9cbbc63"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        
+        const messaging = firebase.messaging();
+        let currentToken = null;
+
+        // 알림 권한 먼저 확인 후 토큰 가져오기
+        async function getFCMToken() {
+            try {
+                // 알림 권한 요청
+                const permission = await Notification.requestPermission();
+                console.log('알림 권한 결과:', permission);
+                
+                if (permission !== 'granted') {
+                    document.getElementById('token-display').innerText = '❌ 알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해주세요.';
+                    return;
+                }
+
+                // FCM 토큰 가져오기 (VAPID 키 없이 시도)
+                console.log('FCM 토큰 가져오기 시작...');
+                const currentToken = await messaging.getToken();
+                console.log('FCM 토큰 결과:', currentToken);
+                
+                if (currentToken) {
+                    console.log('✅ FCM 토큰 획득 성공:', currentToken);
+                    document.getElementById('token-display').innerHTML = 
+                        `<strong>FCM 토큰:</strong><br><textarea style="width:100%; height:100px; font-size:12px;">${currentToken}</textarea>`;
+                    document.getElementById('test-notification').disabled = false;
+                    window.fcmToken = currentToken;
+                } else {
+                    console.log('❌ FCM 토큰을 가져올 수 없습니다.');
+                    document.getElementById('token-display').innerHTML = 
+                        `<div style="color: orange;">⚠️ FCM 토큰을 가져올 수 없습니다.<br>
+                        HTTPS 환경이 아니거나 Service Worker 문제일 수 있습니다.<br>
+                        <button onclick="location.reload()">새로고침</button></div>`;
+                }
+            } catch (err) {
+                console.error('FCM 토큰 가져오기 오류:', err);
+                document.getElementById('token-display').innerHTML = 
+                    `<div style="color: red;">❌ FCM 토큰 오류: ${err.message}<br>
+                    <button onclick="location.reload()">새로고침</button></div>`;
+            }
+        }
+
+        // 함수 호출
+        getFCMToken();
+
+        // 포그라운드 메시지 리스너
+        messaging.onMessage((payload) => {
+            console.log('포그라운드 메시지 수신:', payload);
+            
+            document.getElementById('result').innerHTML += 
+                `<div style="border: 1px solid green; margin: 5px 0; padding: 10px;">
+                    <strong>✅ 알림 수신:</strong><br>
+                    제목: ${payload.notification.title}<br>
+                    내용: ${payload.notification.body}<br>
+                    시간: ${new Date().toLocaleString()}
+                </div>`;
+        });
+
+        // 테스트 알림 보내기
+        document.getElementById('test-notification').addEventListener('click', async () => {
+            if (!window.fcmToken) {
+                alert('FCM 토큰이 없습니다.');
+                return;
+            }
+
+            document.getElementById('result').innerHTML = '📤 테스트 알림 발송 중...';
+
+            try {
+                const response = await fetch('https://bbxycbghbatcovzuiotu.supabase.co/functions/v1/send-firebase-fcm-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJieHljYmdoYmF0Y292enVpb3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyMDEwOTYsImV4cCI6MjA2NTc3NzA5Nn0.dvG6EzASvCOWQZ0AEHMseTV7WvgOnHNkt58NAviW5is',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fcm_tokens: [window.fcmToken],
+                        notification: {
+                            title: '🎉 T-Bridge FCM 테스트 성공!',
+                            body: 'Firebase FCM HTTP v1 API가 정상 작동합니다!',
+                            image: 'https://firebase.google.com/images/brand-guidelines/logo-standard.png'
+                        },
+                        data: {
+                            type: 'test_notification',
+                            source: 'web_test',
+                            timestamp: Date.now().toString()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                console.log('FCM 발송 결과:', result);
+
+                document.getElementById('result').innerHTML = 
+                    `<div style="border: 1px solid blue; padding: 10px; margin: 10px 0;">
+                        <strong>📊 발송 결과:</strong><br>
+                        성공: ${result.sent || 0}개<br>
+                        실패: ${result.failed || 0}개<br>
+                        서비스: ${result.service}<br>
+                        시간: ${new Date().toLocaleString()}
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>`;
+
+            } catch (error) {
+                console.error('FCM 테스트 오류:', error);
+                document.getElementById('result').innerHTML = 
+                    `<div style="border: 1px solid red; padding: 10px; color: red;">
+                        ❌ 오류: ${error.message}
+                    </div>`;
+            }
+        });
+
+        // 알림 권한은 getFCMToken() 함수에서 처리됨
+    </script>
+</body>
+</html>

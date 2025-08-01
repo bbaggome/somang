@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "351909391549",
+    "project_id": "t-bridge",
+    "storage_bucket": "t-bridge.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:351909391549:android:d16452ef45c8df97785bd4",
+        "android_client_info": {
+          "package_name": "com.tbridge.userapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCA6DzZbXraYvImhLQUEv9fsUrLcqflPD8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

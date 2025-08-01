@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 견적 내용 확인</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden mx-auto">
+
+        <header class="p-4 flex items-center justify-center relative flex-shrink-0 border-b border-gray-100">
+            <button class="absolute left-4 top-1/2 -translate-y-1/2" aria-label="뒤로가기" onclick="history.back()">
+                <i class="fas fa-chevron-left text-xl text-gray-700"></i>
+            </button>
+            <h1 class="text-lg font-bold text-gray-800">휴대폰 견적 받아보기</h1>
+        </header>
+
+        <main class="flex-grow overflow-y-auto p-6 pb-24">
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800 leading-snug">입력하신 정보가 맞다면,<br>이제 견적을 받아볼까요?</h2>
+                <p class="mt-2 text-gray-500 text-sm">견적을 요청하시면, 매장 방문 개통부터 택배와 퀵으로 받을 수 있는 비대면 개통 견적까지 모두 받아볼 수 있어요!</p>
+
+                <div class="mt-8 p-5 bg-gray-50 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-500 w-24 flex-shrink-0">구매 대상</span>
+                        <span class="font-bold text-gray-800 text-right">본인 - 일반(만 35세~64세 이하)</span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-500 w-24 flex-shrink-0">현재 이용 내역</span>
+                        <span class="font-bold text-gray-800 text-right">SKT</span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-500 w-24 flex-shrink-0">희망 통신사</span>
+                        <span class="font-bold text-gray-800 text-right">KT (번호이동)</span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-500 w-24 flex-shrink-0">구매 모델</span>
+                        <span class="font-bold text-gray-800 text-right">갤럭시 S25 Ultra 5G 256GB | 티타늄 블랙</span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-500 w-24 flex-shrink-0">견적 받을 동네</span>
+                        <span class="font-bold text-gray-800 text-right">영천동</span>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <div class="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg flex items-center">
+                        <i class="fas fa-exclamation-circle text-xl mr-3"></i>
+                        <p class="text-sm font-medium">휴대폰 개통 후 견적 내용과 개통 내용이 일치하는지 <span class="font-bold">반드시 확인</span>하시기 바랍니다!</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="p-4 bg-white flex-shrink-0">
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    잠깐! 견적 요청 후 일주일간 수정 및 재등록이 불가능하니 신중히 선택해주세요!
+                </div>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+                <button class="w-1/3 bg-gray-200 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-300 transition" aria-label="뒤로가기" onclick="history.back()">뒤로가기</button>
+                <button id="submitRequest" class="w-2/3 bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition">
+                    견적 요청하기
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <div id="confirmationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-8 text-center shadow-xl max-w-sm mx-auto">
+            <div class="mb-4">
+                <i class="fas fa-check-circle text-5xl text-blue-500"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">견적 요청이 완료되었습니다.</h3>
+            <p class="text-gray-600 mb-6">매장들이 곧 견적을 보내드릴 예정입니다.<br>알림을 확인해주세요!</p>
+            <button id="confirmAndRedirect" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const submitButton = document.getElementById('submitRequest');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmAndRedirectButton = document.getElementById('confirmAndRedirect');
+
+        submitButton.addEventListener('click', () => {
+            confirmationModal.classList.remove('hidden');
+        });
+
+        confirmAndRedirectButton.addEventListener('click', () => {
+            // In a real application, you would save the data first.
+            // For this demo, we will just redirect.
+            window.location.href = '../main.html';
+        });
+    </script>
+</body>
+</html>

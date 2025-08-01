@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Bridge - 메인</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5; /* 실제 앱에서는 이 배경이 보이지 않게 됩니다. */
+        }
+
+        .tab-active {
+            border-color: #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+        }
+
+        .tab {
+            color: #6b7280;
+            border-color: transparent;
+        }
+        /* 스크롤바 숨기기 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 드래그 스크롤을 위한 스타일 */
+        .scroll-container {
+            cursor: grab;
+        }
+
+            .scroll-container:active {
+                cursor: grabbing;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col overflow-hidden relative mx-auto">
+
+        <header class="p-4 flex items-center justify-between flex-shrink-0 z-10 bg-white border-b border-gray-100">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">김지혜님, 안녕하세요!</h1>
+            </div>
+            <div class="relative">
+                <i class="fas fa-bell text-xl text-gray-500"></i>
+                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </div>
+        </header>
+
+        <main class="flex-grow overflow-y-auto px-4 pb-20 no-scrollbar">
+            <section class="mt-4 grid grid-cols-2 gap-4">
+                <a href="order/order_step1.html" class="bg-blue-600 text-white p-4 rounded-xl text-center shadow-lg hover:bg-blue-700 transition-transform hover:scale-105">
+                    <i class="fas fa-mobile-screen-button text-2xl mb-2"></i>
+                    <h3 class="font-bold">휴대폰 견적요청</h3>
+                </a>
+                <a href="#" class="bg-indigo-600 text-white p-4 rounded-xl text-center shadow-lg hover:bg-indigo-700 transition-transform hover:scale-105">
+                    <i class="fas fa-wifi text-2xl mb-2"></i>
+                    <h3 class="font-bold">인터넷+TV 견적요청</h3>
+                </a>
+            </section>
+
+            <section class="mt-8">
+                <h2 class="text-lg font-bold mb-4">놓치면 후회! T-Bridge 단독 프로모션</h2>
+                <div class="relative">
+                    <div id="promotion-container" class="flex overflow-x-auto space-x-4 pb-4 no-scrollbar scroll-container">
+                        <div class="flex-shrink-0 w-3/4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 rounded-lg shadow-md">
+                            <h4 class="font-bold">인터넷+TV 가입하고 현금 지원금 받자!</h4>
+                            <p class="text-sm mt-1">지금 가입 시 최대 46만원 혜택</p>
+                        </div>
+                        <div class="flex-shrink-0 w-3/4 bg-gradient-to-r from-orange-400 to-red-500 text-white p-4 rounded-lg shadow-md">
+                            <h4 class="font-bold">Galaxy S25 사전예약 특별 사은품 증정</h4>
+                            <p class="text-sm mt-1">정품케이스 + 무선충전기 증정</p>
+                        </div>
+                        <div class="flex-shrink-0 w-3/4 bg-gradient-to-r from-green-400 to-teal-500 text-white p-4 rounded-lg shadow-md">
+                            <h4 class="font-bold">친구 추천하고 5만원 받아가세요!</h4>
+                            <p class="text-sm mt-1">추천인/피추천인 모두에게 혜택</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold">인기 인터넷+TV 상품</h2>
+                    <a href="#" class="text-sm text-gray-500 hover:text-blue-600">더보기 ></a>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-gray-800">KT 1기가 인터넷 + TV 베이직</span>
+                            <div class="flex items-center text-sm text-gray-500 mt-1">
+                                <i class="fas fa-bolt mr-1"></i><span>1Gbps</span>
+                                <i class="fas fa-tv ml-3 mr-1"></i><span>236채널</span>
+                            </div>
+                        </div>
+                        <span class="font-bold text-blue-600 text-lg">월 38,500원</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-gray-800">SK 500메가 인터넷 + TV All</span>
+                            <div class="flex items-center text-sm text-gray-500 mt-1">
+                                <i class="fas fa-bolt mr-1"></i><span>500Mbps</span>
+                                <i class="fas fa-tv ml-3 mr-1"></i><span>216채널</span>
+                            </div>
+                        </div>
+                        <span class="font-bold text-blue-600 text-lg">월 35,200원</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-gray-800">LGU+ 100메가 인터넷 Only</span>
+                            <div class="flex items-center text-sm text-gray-500 mt-1">
+                                <i class="fas fa-bolt mr-1"></i><span>100Mbps</span>
+                            </div>
+                        </div>
+                        <span class="font-bold text-blue-600 text-lg">월 22,000원</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8">
+                <h2 class="text-lg font-bold mb-4">통신사별 인기 제품</h2>
+                <div>
+                    <div class="flex border-b border-gray-200">
+                        <button class="flex-1 py-2 text-center text-sm border-b-2 tab-active transition" data-tab="skt">SKT</button>
+                        <button class="flex-1 py-2 text-center text-sm border-b-2 tab transition" data-tab="kt">KT</button>
+                        <button class="flex-1 py-2 text-center text-sm border-b-2 tab transition" data-tab="lgu">LGU+</button>
+                    </div>
+                    <div class="pt-4">
+                        <div id="skt" class="tab-content space-y-2">
+                            <div class="bg-white p-3 rounded-lg flex items-center shadow-sm">
+                                <img src="https://placehold.co/60x60/E2E8F0/4A5568?text=S25" alt="갤럭시 S25" class="w-12 h-12 rounded-md mr-4">
+                                <div>
+                                    <h4 class="font-bold">1. Galaxy S25</h4>
+                                    <p class="text-sm text-gray-500">최고의 성능과 AI 기능</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg flex items-center shadow-sm">
+                                <img src="https://placehold.co/60x60/E2E8F0/4A5568?text=Flip6" alt="갤럭시 Z 플립6" class="w-12 h-12 rounded-md mr-4">
+                                <div>
+                                    <h4 class="font-bold">2. Galaxy Z Flip 6</h4>
+                                    <p class="text-sm text-gray-500">더 커진 커버 스크린</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="kt" class="hidden tab-content space-y-2">
+                            <div class="bg-white p-3 rounded-lg flex items-center shadow-sm">
+                                <img src="https://placehold.co/60x60/E2E8F0/4A5568?text=iP17" alt="아이폰 17" class="w-12 h-12 rounded-md mr-4">
+                                <div>
+                                    <h4 class="font-bold">1. iPhone 17</h4>
+                                    <p class="text-sm text-gray-500">새로운 디자인, 강력한 카메라</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="lgu" class="hidden tab-content">
+                            <p class="text-center text-gray-500 py-4">LGU+ 인기 제품 정보가 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold">생생한 최신 리뷰</h2>
+                    <a href="#" class="text-sm text-gray-500 hover:text-blue-600">더보기 ></a>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <div class="flex items-center mb-2">
+                            <div class="text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-500 ml-2">김*혜 | iPhone 17 구매</span>
+                        </div>
+                        <p class="text-gray-700">사장님이 너무 친절하시고 지원금도 최대로 맞춰주셨어요! 채팅으로 다 조율하고 가니 편하네요.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <div class="flex items-center mb-2">
+                            <div class="text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-500 ml-2">이*준 | 인터넷+TV 가입</span>
+                        </div>
+                        <p class="text-gray-700">설치비 지원 약속 잘 지켜주셨습니다. 다른 곳보다 5만원 더 저렴하게 했어요.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="absolute bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200 flex-shrink-0 z-10">
+            <div class="flex justify-around py-2">
+                <a href="#" class="flex flex-col items-center text-blue-600 w-1/5 pt-1">
+                    <i class="fas fa-home text-lg mb-1"></i>
+                    <span class="text-xs font-bold">홈</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-1 hover:text-blue-600 transition">
+                    <i class="fas fa-file-invoice text-lg mb-1"></i>
+                    <span class="text-xs">견적요청</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-1 hover:text-blue-600 transition">
+                    <i class="fas fa-store text-lg mb-1"></i>
+                    <span class="text-xs">성지매장</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-1 hover:text-blue-600 transition">
+                    <i class="fas fa-comments text-lg mb-1"></i>
+                    <span class="text-xs">채팅</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-1 hover:text-blue-600 transition">
+                    <i class="fas fa-user-circle text-lg mb-1"></i>
+                    <span class="text-xs">마이</span>
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ... 스크립트 내용은 그대로 ...
+    </script>
+</body>
+</html>
