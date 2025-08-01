@@ -46,7 +46,8 @@
       "mcp__supabase__get_anon_key",
       "Bash(start http://localhost:8083)",
       "Bash(npx eslint:*)",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   },

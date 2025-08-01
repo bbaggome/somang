@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "user-app/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["user-app/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "user-app/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "@vapid-public-key",
+    "KAKAO_REST_API_KEY": "@kakao-rest-api-key",
+    "KAKAO_JAVASCRIPT_API_KEY": "@kakao-javascript-api-key",
+    "NEXT_PUBLIC_KAKAO_JAVASCRIPT_API_KEY": "@kakao-javascript-api-key"
+  }
+}
