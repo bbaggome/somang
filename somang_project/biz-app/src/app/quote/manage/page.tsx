@@ -1,7 +1,7 @@
 // /biz-app/src/app/quote/manage/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
@@ -56,11 +56,7 @@ export default function QuoteManagePage() {
   const [store, setStore] = useState<Store | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  useEffect(() => {
-    loadQuotes();
-  }, []);
-
-  const loadQuotes = async () => {
+  const loadQuotes = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -152,13 +148,17 @@ export default function QuoteManagePage() {
 
       setQuotes(enrichedQuotes);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('견적 로드 실패:', error);
       setError('견적 목록을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadQuotes();
+  }, [loadQuotes]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {

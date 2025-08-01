@@ -1,12 +1,13 @@
 // /biz-app/src/app/quote/send/[requestId]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
 interface QuoteRequest {
   id: string;
+  user_id: string;
   created_at: string;
   status: "open" | "closed" | "expired";
   product_type: string;
@@ -97,27 +98,7 @@ export default function QuoteSendPage() {
     store_memo: "",
   });
 
-  useEffect(() => {
-    if (requestId) {
-      loadQuoteRequest();
-    }
-  }, [requestId]);
-
-  // TCO 자동 계산
-  useEffect(() => {
-    calculateTCO();
-  }, [
-    quoteDetails.device_price,
-    quoteDetails.monthly_fee,
-    quoteDetails.activation_fee,
-    quoteDetails.device_discount,
-    quoteDetails.plan_discount,
-    quoteDetails.additional_discount,
-    quoteDetails.delivery_fee,
-    quoteDetails.contract_period,
-  ]);
-
-  const loadQuoteRequest = async () => {
+  const loadQuoteRequest = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -234,15 +215,16 @@ export default function QuoteSendPage() {
         setError("로그인이 필요합니다.");
         return;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("견적 요청 로드 실패:", error);
-      setError(`견적 요청 정보를 불러올 수 없습니다: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      setError(`견적 요청 정보를 불러올 수 없습니다: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId]);
 
-  const calculateTCO = () => {
+  const calculateTCO = useCallback(() => {
     const {
       device_price,
       monthly_fee,
@@ -267,9 +249,20 @@ export default function QuoteSendPage() {
       ...prev,
       tco_24months: Math.max(0, totalCost),
     }));
-  };
+  }, [quoteDetails]);
 
-  const handleInputChange = (field: keyof QuoteDetails, value: any) => {
+  useEffect(() => {
+    if (requestId) {
+      loadQuoteRequest();
+    }
+  }, [requestId, loadQuoteRequest]);
+
+  // TCO 자동 계산
+  useEffect(() => {
+    calculateTCO();
+  }, [calculateTCO]);
+
+  const handleInputChange = (field: keyof QuoteDetails, value: string | number) => {
     setQuoteDetails((prev) => ({
       ...prev,
       [field]: value,
@@ -372,7 +365,7 @@ export default function QuoteSendPage() {
             user_ids: [quoteRequest.user_id], // 견적 요청한 사용자에게 알림
             notification: {
               title: "💼 새로운 견적이 도착했습니다!",
-              body: `${store.name}에서 ${device.device_name} 견적을 보내드렸습니다. 총 비용: ${formatCurrency(quoteDetails.tco_24months)}원`,
+              body: `${store.name}에서 ${device?.device_name || '기기'} 견적을 보내드렸습니다. 총 비용: ${formatCurrency(quoteDetails.tco_24months)}원`,
               android: {
                 channel_id: "quote_notifications",
                 priority: "high",
@@ -394,7 +387,7 @@ export default function QuoteSendPage() {
               quote_id: quoteData.id,
               request_id: requestId,
               store_name: store.name,
-              device_name: device.device_name,
+              device_name: device?.device_name || 'Unknown Device',
               total_cost: quoteDetails.tco_24months.toString(),
               timestamp: new Date().toISOString()
             },
@@ -425,9 +418,10 @@ export default function QuoteSendPage() {
       
       // 성공 후 리다이렉트
       router.back();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("견적 전송 실패:", error);
-      setError(`견적 전송 중 오류가 발생했습니다: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      setError(`견적 전송 중 오류가 발생했습니다: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }

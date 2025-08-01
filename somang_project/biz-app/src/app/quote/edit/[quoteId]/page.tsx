@@ -1,7 +1,7 @@
 // /biz-app/src/app/quote/edit/[quoteId]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
@@ -73,27 +73,7 @@ export default function QuoteEditPage() {
     store_memo: ''
   });
 
-  useEffect(() => {
-    if (quoteId) {
-      loadQuoteData();
-    }
-  }, [quoteId]);
-
-  // TCO 자동 계산
-  useEffect(() => {
-    calculateTCO();
-  }, [
-    quoteDetails.device_price,
-    quoteDetails.monthly_fee,
-    quoteDetails.activation_fee,
-    quoteDetails.device_discount,
-    quoteDetails.plan_discount,
-    quoteDetails.additional_discount,
-    quoteDetails.delivery_fee,
-    quoteDetails.contract_period
-  ]);
-
-  const loadQuoteData = async () => {
+  const loadQuoteData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -158,15 +138,15 @@ export default function QuoteEditPage() {
         }
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('데이터 로드 실패:', error);
       setError('견적 정보를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [quoteId]);
 
-  const calculateTCO = () => {
+  const calculateTCO = useCallback(() => {
     const {
       device_price,
       monthly_fee,
@@ -186,9 +166,20 @@ export default function QuoteEditPage() {
       ...prev,
       tco_24months: Math.max(0, totalCost)
     }));
-  };
+  }, [quoteDetails]);
 
-  const handleInputChange = (field: keyof QuoteDetails, value: any) => {
+  useEffect(() => {
+    if (quoteId) {
+      loadQuoteData();
+    }
+  }, [quoteId, loadQuoteData]);
+
+  // TCO 자동 계산
+  useEffect(() => {
+    calculateTCO();
+  }, [calculateTCO]);
+
+  const handleInputChange = (field: keyof QuoteDetails, value: string | number) => {
     setQuoteDetails(prev => ({
       ...prev,
       [field]: value
@@ -244,7 +235,7 @@ export default function QuoteEditPage() {
       alert('견적이 성공적으로 수정되었습니다!');
       router.back();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('견적 수정 실패:', error);
       setError('견적 수정 중 오류가 발생했습니다.');
     } finally {

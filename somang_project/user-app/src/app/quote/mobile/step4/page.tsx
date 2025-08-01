@@ -8,8 +8,8 @@ import { useQuote } from '@/context/QuoteContext';
 export default function MobileQuoteStep4Page() {
   const router = useRouter();
   const { quoteData, updateQuoteData } = useQuote();
-  const [changeType, setChangeType] = useState<string>(quoteData.changeType || '');
-  const [newCarrier, setNewCarrier] = useState<string>(quoteData.newCarrier || '');
+  const [changeType, setChangeType] = useState<'port' | 'device_only' | 'new' | ''>(quoteData.changeType || '');
+  const [newCarrier, setNewCarrier] = useState<'skt' | 'kt' | 'lgu' | 'mvno' | ''>(quoteData.newCarrier || '');
   const currentCarrier = quoteData.currentCarrier || '';
 
   // 컴포넌트 마운트 시 저장된 데이터로 초기화
@@ -22,8 +22,8 @@ export default function MobileQuoteStep4Page() {
     if (changeType && (changeType === 'device_only' || newCarrier)) {
       // Context에 데이터 저장
       updateQuoteData({ 
-        changeType: changeType,
-        newCarrier: changeType !== 'device_only' ? newCarrier : undefined
+        changeType: changeType as 'port' | 'device_only' | 'new',
+        newCarrier: changeType !== 'device_only' ? newCarrier as 'skt' | 'kt' | 'lgu' | 'mvno' : undefined
       });
       // URL 파라미터 없이 이동
       router.push('/quote/mobile/step5');
@@ -97,7 +97,7 @@ export default function MobileQuoteStep4Page() {
                     value={option.value} 
                     checked={changeType === option.value}
                     onChange={(e) => {
-                      setChangeType(e.target.value);
+                      setChangeType(e.target.value as 'port' | 'device_only' | 'new');
                       setNewCarrier(''); // Reset new carrier selection
                     }}
                     className="hidden"
@@ -149,7 +149,7 @@ export default function MobileQuoteStep4Page() {
                       name="newCarrier" 
                       value={option.value} 
                       checked={newCarrier === option.value}
-                      onChange={(e) => setNewCarrier(e.target.value)}
+                      onChange={(e) => setNewCarrier(e.target.value as 'skt' | 'kt' | 'lgu' | 'mvno')}
                       className="hidden"
                     />
                   </label>

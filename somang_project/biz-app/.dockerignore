@@ -6,8 +6,8 @@ node_modules
 # Next.js 빌드 결과물 폴더
 .next
 
-# 로컬 환경 설정 파일
-.env.local
+# 로컬 환경 설정 파일 (개발용은 제외, 운영용은 포함)
+# .env.local
 
 # 운영체제 생성 파일
 .DS_Store

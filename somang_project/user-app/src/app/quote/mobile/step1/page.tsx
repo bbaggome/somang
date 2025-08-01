@@ -186,9 +186,7 @@ export default function MobileQuoteStep1Page() {
                 ? 'translate-y-0 opacity-100' 
                 : 'translate-y-full opacity-0'
             }`}
-            style={{
-              animation: showBottomSheet ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
-            }}
+            // 인라인 스타일 제거 - Tailwind의 transform과 transition 클래스로 충분함
           >
             {/* 상단 핸들바 */}
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>

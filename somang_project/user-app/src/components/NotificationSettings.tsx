@@ -147,7 +147,7 @@ export default function NotificationSettings() {
             <p><strong>해결 방법 3 (Chrome 플래그):</strong></p>
             <p>1. Chrome 주소창에 다음 입력:</p>
             <code className="block bg-gray-200 p-1 rounded text-xs">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
-            <p>2. "Enabled" 선택</p>
+            <p>2. &quot;Enabled&quot; 선택</p>
             <p>3. 텍스트 박스에 입력:</p>
             <code className="block bg-gray-200 p-1 rounded text-xs">http://localhost:50331</code>
             <p>4. Chrome 재시작</p>

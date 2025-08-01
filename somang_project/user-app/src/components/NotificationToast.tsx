@@ -1,8 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRealtimeNotifications } from '@/components/RealtimeNotificationProvider';
 import { useRouter } from 'next/navigation';
+
+// RealtimeNotification 타입 정의
+interface RealtimeNotification {
+  id: string;
+  type: "quote" | "system";
+  title: string;
+  message: string;
+  data?: {
+    quote_request_id?: string;
+    requestId?: string;
+    storeId?: string;
+    [key: string]: unknown;
+  };
+  read: boolean;
+  created_at: string;
+}
 
 export default function NotificationToast() {
   const { notifications, markAsRead, clearNotification } = useRealtimeNotifications();
@@ -21,7 +37,7 @@ export default function NotificationToast() {
     }
   }, [notifications, visibleNotifications]);
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: RealtimeNotification) => {
     // 알림을 읽음으로 표시
     markAsRead(notification.id);
     
@@ -34,7 +50,7 @@ export default function NotificationToast() {
     handleDismiss(notification.id);
   };
 
-  const handleDismiss = (notificationId: string) => {
+  const handleDismiss = useCallback((notificationId: string) => {
     // 화면에서 제거
     setVisibleNotifications(prev => prev.filter(id => id !== notificationId));
     
@@ -42,7 +58,7 @@ export default function NotificationToast() {
     setTimeout(() => {
       clearNotification(notificationId);
     }, 300);
-  };
+  }, [clearNotification]);
 
   // 자동으로 숨기기 (10초 후)
   useEffect(() => {
@@ -58,7 +74,7 @@ export default function NotificationToast() {
     return () => {
       timers.forEach(timer => clearTimeout(timer));
     };
-  }, [visibleNotifications]);
+  }, [visibleNotifications, handleDismiss]);
 
   const visibleNotificationObjects = notifications.filter(n => 
     visibleNotifications.includes(n.id)
@@ -104,6 +120,7 @@ export default function NotificationToast() {
                 handleDismiss(notification.id);
               }}
               className="ml-2 text-blue-200 hover:text-white transition-colors flex-shrink-0"
+              aria-label='닫기'
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -114,41 +131,13 @@ export default function NotificationToast() {
           {/* 진행바 애니메이션 */}
           <div className="mt-3">
             <div className="w-full bg-blue-400 bg-opacity-30 rounded-full h-1">
-              <div className="bg-white h-1 rounded-full animate-progress" style={{animationDuration: '10s'}}></div>
+              <div className="bg-white h-1 rounded-full animate-[progress_10s_linear]"></div>
             </div>
           </div>
         </div>
       ))}
       
-      <style jsx>{`
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes progress {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0%;
-          }
-        }
-        
-        .animate-slide-in-right {
-          animation: slide-in-right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .animate-progress {
-          animation: progress linear;
-        }
-      `}</style>
+      {/* CSS-in-JS 제거 - tailwind.config.ts에 커스텀 애니메이션 추가 필요 */}
     </div>
   );
 }

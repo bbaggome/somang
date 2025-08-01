@@ -19,7 +19,16 @@ const ToggleButtonGroup = ({ options, selected, onSelect, multiSelect = false }:
 // Daum Postcode 타입 정의
 declare global {
   interface Window {
-    daum: any;
+    daum: {
+      Postcode: new (options: {
+        oncomplete: (data: {
+          zonecode: string;
+          address: string;
+        }) => void;
+      }) => {
+        open: () => void;
+      };
+    };
   }
 }
 
@@ -99,7 +108,7 @@ export default function BizSignupPage() {
   const handleAddressSearch = () => {
     if (window.daum) {
       new window.daum.Postcode({
-        oncomplete: (data: any) => {
+        oncomplete: (data: { zonecode: string; address: string }) => {
           setFormData(prev => ({
             ...prev,
             zipCode: data.zonecode,
@@ -177,9 +186,10 @@ export default function BizSignupPage() {
 
       alert('T-Bridge 파트너 가입 신청이 성공적으로 완료되었습니다. 로그인 페이지로 이동합니다.');
       router.push('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup process error:', error);
-      alert(`오류가 발생했습니다: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      alert(`오류가 발생했습니다: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

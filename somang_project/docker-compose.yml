@@ -1,4 +1,4 @@
-version: '3.8'  # 최신 버전으로 업데이트
+# Docker Compose 설정 파일
 services:
   user-app-dev:
     container_name: user-app-dev
@@ -70,14 +70,25 @@ services:
         aliases:
           - admin-app-dev
 
-  # 운영 환경 서비스는 기존 설정 유지
+  # 운영 환경 서비스
   user-app-prod:
     container_name: user-app-prod
     build:
       context: ./user-app
       dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
-      - "8000:3000"
+      - "60331:3000"  # HTTP 포트
+      - "60443:3000"  # HTTPS 포트 (프록시 또는 로드밸런서에서 처리)
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+      - KAKAO_REST_API_KEY=${KAKAO_REST_API_KEY}
+      - KAKAO_JAVASCRIPT_API_KEY=${KAKAO_JAVASCRIPT_API_KEY}
+      - NEXT_PUBLIC_KAKAO_JAVASCRIPT_API_KEY=${NEXT_PUBLIC_KAKAO_JAVASCRIPT_API_KEY}
     profiles:
       - "prod"
     networks:
@@ -88,8 +99,15 @@ services:
     build:
       context: ./biz-app
       dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
-      - "8100:3000"
+      - "60332:3000"  # HTTP 포트
+      - "60444:3000"  # HTTPS 포트 (프록시 또는 로드밸런서에서 처리)
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     profiles:
       - "prod"
     networks:
@@ -100,8 +118,15 @@ services:
     build:
       context: ./admin-app
       dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
-      - "8200:3000"
+      - "60333:3000"  # HTTP 포트
+      - "60445:3000"  # HTTPS 포트 (프록시 또는 로드밸런서에서 처리)
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     profiles:
       - "prod"
     networks:
