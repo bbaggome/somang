@@ -3,7 +3,6 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/lib/supabase/client';
 // Service Worker 기반 Push 알림 대신 기본 브라우저 알림만 사용
 
 interface NotificationContextType {

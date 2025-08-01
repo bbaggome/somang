@@ -1,7 +1,7 @@
 // /biz-app/src/app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
@@ -53,11 +53,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       console.log('=== BIZ-APP 대시보드 인증 확인 ===');
       
@@ -116,7 +112,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    checkUser();
+  }, [checkUser]);
 
   // 프로필 파라미터를 받는 버전
   const loadQuoteRequestsWithProfile = async (profile: UserProfile) => {
@@ -189,20 +189,13 @@ export default function DashboardPage() {
       setQuoteRequests(transformedData);
       console.log('최종 변환된 데이터:', transformedData.length, '건');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('견적 요청 로드 중 예외 발생:', error);
-      setError(`견적 요청 로드 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      setError(`견적 요청 로드 중 오류가 발생했습니다: ${errorMessage}`);
     }
   };
 
-  // 기존 함수는 상태 기반으로 작동
-  const loadQuoteRequests = async () => {
-    if (userProfile) {
-      await loadQuoteRequestsWithProfile(userProfile);
-    } else {
-      console.log('userProfile이 없어서 견적 요청 로드를 건너뜁니다.');
-    }
-  };
 
   const handleLogout = async () => {
     try {

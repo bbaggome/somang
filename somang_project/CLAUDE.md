@@ -28,6 +28,8 @@ Tech Stack: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS, Supabase, pnpm
 ## 코딩 스타일
 - TypeScript 사용
 - 함수형 컴포넌트 우선
+- Tailwind CSS 사용
+- ESLint 오류에 대한 검증을 무조건 하고 오류수정 해라
 
 ### Individual App Development
 ```bash
